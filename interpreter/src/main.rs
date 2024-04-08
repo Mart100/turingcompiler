@@ -30,24 +30,53 @@ struct TuringMachine {
 impl TuringMachine {
     fn from_file(filename: &str) -> Self {
         let contents = fs::read_to_string(filename).unwrap();
-        let mut lines = contents.lines();
+        let mut lines = contents.lines().peekable();
         let mut instructions = HashMap::new();
+
+        let tape_start = lines
+            .peek()
+            .unwrap()
+            .split_whitespace()
+            .enumerate()
+            .find(|(_, s)| s.starts_with("!"))
+            .map(|(i, _)| i)
+            .unwrap_or(0);
 
         let initial_tape = lines
             .next()
             .unwrap()
             .split_whitespace()
-            .map(|s| s.parse::<u8>().unwrap())
+            .map(|s| s.replace("!", "").parse::<u8>().unwrap())
             .collect();
 
         for line in lines {
             let parts: Vec<&str> = line.split_whitespace().collect();
             if parts.len() < 5 {
                 continue;
+            } else if line.starts_with("#") {
+                continue;
             }
             let current_state = parts[0].to_string();
-            let read_symbol = parts[1].parse::<u8>().unwrap();
-            let write_symbol = parts[2].parse::<u8>().unwrap();
+
+            let read_symbol;
+            if parts[1].parse::<u8>().is_ok() {
+                read_symbol = parts[1].parse::<u8>().unwrap();
+            } else if parts[1] == "_" {
+                read_symbol = 255;
+            } else {
+                panic!("Invalid read symbol");
+            }
+
+            let write_symbol;
+            if parts[2].parse::<u8>().is_ok() {
+                write_symbol = parts[2].parse::<u8>().unwrap();
+            } else if parts[2] == "_" {
+                write_symbol = 255;
+            } else {
+                println!("{:?}", parts);
+                panic!("Invalid write symbol");
+            }
+
             let action = match parts[3] {
                 "S" => Action::Stay,
                 "L" => Action::Move(Direction::Left),
@@ -67,7 +96,7 @@ impl TuringMachine {
 
         Self {
             current_state: "START".to_string(),
-            current_position: 0,
+            current_position: tape_start,
             tape: initial_tape,
             instructions,
         }
@@ -82,7 +111,9 @@ impl TuringMachine {
                 tape_str.push_str(&format!(" {} ", symbol));
             }
         }
-        println!("state: {} tape: {}", self.current_state, tape_str);
+        let state_str = format!("state: {}", self.current_state);
+        let padding = " ".repeat(40 - state_str.len());
+        println!("{}{}tape: {}", state_str, padding, tape_str);
     }
 
     fn step(&mut self) {
@@ -101,7 +132,7 @@ impl TuringMachine {
             Action::Stay => (),
             Action::Move(Direction::Left) => {
                 if self.current_position == 0 {
-                    self.tape.insert(0, 0);
+                    self.tape.insert(0, 255);
                 } else {
                     self.current_position -= 1;
                 }
@@ -109,7 +140,7 @@ impl TuringMachine {
             Action::Move(Direction::Right) => {
                 self.current_position += 1;
                 if self.current_position == self.tape.len() {
-                    self.tape.push(0);
+                    self.tape.push(255);
                 }
             }
         }
@@ -130,4 +161,5 @@ impl TuringMachine {
 fn main() {
     let mut turing_machine = TuringMachine::from_file("input.txt");
     turing_machine.run();
+    println!("Final tape: {:?}", turing_machine.tape);
 }

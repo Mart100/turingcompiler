@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     Keyword,
     Identifier,
@@ -6,7 +6,7 @@ pub enum TokenType {
     Number,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub type_: TokenType,
     pub value: String,
@@ -22,7 +22,7 @@ pub fn lexer(code: &str) -> Vec<Token> {
                         type_: TokenType::Keyword,
                         value: word.to_string(),
                     },
-                    "=" | "+" => Token {
+                    "=" | "+" | "*" => Token {
                         type_: TokenType::Operator,
                         value: word.to_string(),
                     },
@@ -38,4 +38,12 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 .collect::<Vec<_>>()
         })
         .collect()
+}
+
+pub fn tokens_to_string(tokens: Vec<Token>) -> String {
+    tokens
+        .iter()
+        .map(|token| format!("{:?}", token))
+        .collect::<Vec<_>>()
+        .join("\n")
 }

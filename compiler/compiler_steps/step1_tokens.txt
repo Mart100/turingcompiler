@@ -1,0 +1,5 @@
+Token { type_: Number, value: "5" }
+Token { type_: Operator, value: "+" }
+Token { type_: Number, value: "6" }
+Token { type_: Operator, value: "*" }
+Token { type_: Number, value: "7" }

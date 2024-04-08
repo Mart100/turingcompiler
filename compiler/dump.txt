@@ -1,0 +1,24 @@
+# Intermediary Assembly Language Example
+; Example Assembly Language for a Turing Machine Compiler
+
+; Define start of program
+START
+
+; Load value into working area
+LOAD A, 5      ; Load number 5 into variable A
+LOAD B, 10     ; Load number 10 into variable B
+
+; Perform an addition
+ADD A, B       ; Add A and B, result in A
+
+; Store result
+STORE A, 0     ; Store the result from A into the first position of the data area
+
+; Conditional jump
+CMP A, 10      ; Compare A with number 10
+JMP_EQ END     ; If equal, jump to the end of the program
+
+; Define end of program
+END
+HALT           ; Stop the Turing Machine
+
