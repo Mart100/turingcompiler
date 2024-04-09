@@ -70,29 +70,51 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
             Some(op) => {
                 let operation = operator_char_to_string(op);
 
-                code.push(AssemblyInstruction::new(
-                    "LOAD".to_string(),
-                    Some(left.clone()),
-                    Some("A".to_string()),
-                ));
+                match operation.as_str() {
+                    "ADD" => {
+                        code.push(AssemblyInstruction::new(
+                            "LOAD".to_string(),
+                            Some(left.clone()),
+                            Some("A".to_string()),
+                        ));
 
-                code.push(AssemblyInstruction::new(
-                    "LOAD".to_string(),
-                    Some(right.unwrap().clone()),
-                    Some("B".to_string()),
-                ));
+                        code.push(AssemblyInstruction::new(
+                            "LOAD".to_string(),
+                            Some(right.unwrap().clone()),
+                            Some("B".to_string()),
+                        ));
 
-                code.push(AssemblyInstruction::new(
-                    operation,
-                    Some("A".to_string()),
-                    Some("B".to_string()),
-                ));
+                        code.push(AssemblyInstruction::new(operation, None, None));
 
-                code.push(AssemblyInstruction::new(
-                    "STORE".to_string(),
-                    Some("A".to_string()),
-                    Some(result.clone()),
-                ));
+                        code.push(AssemblyInstruction::new(
+                            "STORE".to_string(),
+                            Some("A".to_string()),
+                            Some(result.clone()),
+                        ));
+                    }
+                    "MUL" => {
+                        code.push(AssemblyInstruction::new(
+                            "LOAD".to_string(),
+                            Some(left.clone()),
+                            Some("B".to_string()),
+                        ));
+
+                        code.push(AssemblyInstruction::new(
+                            "LOAD".to_string(),
+                            Some(right.unwrap().clone()),
+                            Some("C".to_string()),
+                        ));
+
+                        code.push(AssemblyInstruction::new(operation, None, None));
+
+                        code.push(AssemblyInstruction::new(
+                            "STORE".to_string(),
+                            Some("A".to_string()),
+                            Some(result.clone()),
+                        ));
+                    }
+                    _ => {}
+                }
             }
             None => {
                 save(&mut storage, result.clone(), left.clone());

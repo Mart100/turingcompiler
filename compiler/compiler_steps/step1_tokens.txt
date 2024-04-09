@@ -3,3 +3,7 @@ Token { type_: Operator, value: "+" }
 Token { type_: Number, value: "6" }
 Token { type_: Operator, value: "*" }
 Token { type_: Number, value: "7" }
+Token { type_: Operator, value: "+" }
+Token { type_: Number, value: "3" }
+Token { type_: Operator, value: "*" }
+Token { type_: Number, value: "4" }

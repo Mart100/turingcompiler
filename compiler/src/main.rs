@@ -22,7 +22,7 @@ fn main() {
     fs::write("compiler_steps/step1_tokens.txt", &tokens_string).unwrap();
 
     let ast = parser(tokens);
-    let ast_string = format!("{:?}", ast);
+    let ast_string = format!("{}\n{:?}", ast, ast);
     fs::write("compiler_steps/step2_ast.txt", &ast_string).unwrap();
 
     let tac = tac_generator(&ast);

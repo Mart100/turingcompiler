@@ -25,6 +25,7 @@ struct TuringMachine {
     current_position: usize,
     tape: Vec<u8>,
     instructions: HashMap<(String, u8), Instruction>,
+    step: u64,
 }
 
 impl TuringMachine {
@@ -64,6 +65,7 @@ impl TuringMachine {
             } else if parts[1] == "_" {
                 read_symbol = 255;
             } else {
+                println!("{:?}", parts);
                 panic!("Invalid read symbol");
             }
 
@@ -99,6 +101,7 @@ impl TuringMachine {
             current_position: tape_start,
             tape: initial_tape,
             instructions,
+            step: 0,
         }
     }
 
@@ -145,6 +148,7 @@ impl TuringMachine {
             }
         }
         self.current_state = instruction.next_state.clone();
+        self.step += 1;
     }
 
     fn run(&mut self) {
@@ -162,4 +166,5 @@ fn main() {
     let mut turing_machine = TuringMachine::from_file("input.txt");
     turing_machine.run();
     println!("Final tape: {:?}", turing_machine.tape);
+    println!("Total steps: {}", turing_machine.step);
 }

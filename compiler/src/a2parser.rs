@@ -1,3 +1,4 @@
+use core::fmt;
 use std::iter::Peekable;
 
 use crate::a1lexer::Token;
@@ -8,6 +9,21 @@ pub struct AstNode {
     pub left: Option<Box<AstNode>>,
     pub right: Option<Box<AstNode>>,
     pub value: Option<String>,
+}
+
+impl fmt::Display for AstNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self.operator {
+            Some(op) => write!(
+                f,
+                "({} {} {})",
+                self.left.as_ref().unwrap(),
+                op,
+                self.right.as_ref().unwrap()
+            ),
+            None => write!(f, "{}", self.value.as_ref().unwrap()),
+        }
+    }
 }
 
 pub fn parser(tokens: Vec<Token>) -> AstNode {

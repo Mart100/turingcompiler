@@ -4,6 +4,7 @@ pub enum TokenType {
     Identifier,
     Operator,
     Number,
+    Parenthesis,
 }
 
 #[derive(Debug, Clone)]
@@ -24,6 +25,10 @@ pub fn lexer(code: &str) -> Vec<Token> {
                     },
                     "=" | "+" | "*" => Token {
                         type_: TokenType::Operator,
+                        value: word.to_string(),
+                    },
+                    "(" | ")" => Token {
+                        type_: TokenType::Parenthesis,
                         value: word.to_string(),
                     },
                     _ if word.parse::<u8>().is_ok() => Token {
