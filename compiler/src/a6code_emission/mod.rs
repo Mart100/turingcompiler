@@ -1,4 +1,5 @@
 mod ADD;
+mod ISZERO;
 mod LOAD;
 mod MUL;
 mod STORE;
@@ -10,6 +11,7 @@ use crate::a5code_generator::AssemblyInstruction;
 pub mod prelude {
     pub use super::helpers::*;
     pub use super::ADD::add_instructions;
+    pub use super::ISZERO::iszero_instruction;
     pub use super::LOAD::load_instructions;
     pub use super::STORE::store_instructions;
     pub use super::*;
@@ -114,6 +116,14 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
                 instructions.extend(get_assembly_instruction_header(&instruction));
                 instructions.push(start_to_end(instruction_counter));
                 instructions.extend(mul_instructions(&instruction_counter));
+
+                instruction_counter += 1;
+            }
+            // Check if the value in A is zero, if it is put 0 in A, otherwise put 1 in A
+            "ISZERO" => {
+                instructions.extend(get_assembly_instruction_header(&instruction));
+                instructions.push(start_to_end(instruction_counter));
+                instructions.extend(iszero_instruction(&instruction_counter));
 
                 instruction_counter += 1;
             }

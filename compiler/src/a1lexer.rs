@@ -6,6 +6,9 @@ pub enum TokenType {
     Number,
     Parenthesis,
     Semicolon,
+    ComparisonOperator,
+    Conditional,
+    Bracket,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +41,18 @@ pub fn lexer(mut code: String) -> Vec<Token> {
                     },
                     ";" => Token {
                         type_: TokenType::Semicolon,
+                        value: word.to_string(),
+                    },
+                    "==" | ">" | "<" => Token {
+                        type_: TokenType::ComparisonOperator,
+                        value: word.to_string(),
+                    },
+                    "if" | "else" => Token {
+                        type_: TokenType::Conditional,
+                        value: word.to_string(),
+                    },
+                    "{" | "}" => Token {
+                        type_: TokenType::Bracket,
                         value: word.to_string(),
                     },
                     _ if word.parse::<u8>().is_ok() => Token {

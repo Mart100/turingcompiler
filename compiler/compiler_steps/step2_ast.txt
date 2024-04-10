@@ -1,28 +1,15 @@
-[AstNode { operator: Some("="), left: None, right: Some(AstNode { operator: Some("+"), left: Some(AstNode { operator: Some("*"), left: Some(AstNode { operator: Some("-"), left: Some(AstNode { operator: None, left: None, right: None, value: Some("22"), var_name: None }), right: Some(AstNode { operator: None, left: None, right: None, value: Some("8"), var_name: None }), value: None, var_name: None }), right: Some(AstNode { operator: None, left: None, right: None, value: Some("4"), var_name: None }), value: None, var_name: None }), right: Some(AstNode { operator: None, left: None, right: None, value: Some("5"), var_name: None }), value: None, var_name: None }), value: None, var_name: Some("a") }, AstNode { operator: Some("="), left: None, right: Some(AstNode { operator: Some("+"), left: Some(AstNode { operator: None, left: None, right: None, value: None, var_name: Some("a") }), right: Some(AstNode { operator: None, left: None, right: None, value: Some("2"), var_name: None }), value: None, var_name: None }), value: None, var_name: Some("b") }]
+[AstNode { operator: Some("+"), left: Some(AstNode { operator: Some("*"), left: Some(AstNode { operator: Some("-"), left: Some(AstNode { operator: None, left: None, right: None, value: Some("15"), var_name: None }), right: Some(AstNode { operator: None, left: None, right: None, value: Some("2"), var_name: None }), value: None, var_name: None }), right: Some(AstNode { operator: None, left: None, right: None, value: Some("4"), var_name: None }), value: None, var_name: None }), right: Some(AstNode { operator: None, left: None, right: None, value: Some("2"), var_name: None }), value: None, var_name: None }]
 
-var_name: a
-Operator: =
-Right
-	Operator: +
+Operator: +
+Left
+	Operator: *
 	Left
-		Operator: *
+		Operator: -
 		Left
-			Operator: -
-			Left
-				Value: 22
-			Right
-				Value: 8
+			Value: 15
 		Right
-			Value: 4
+			Value: 2
 	Right
-		Value: 5
-
-
-var_name: b
-Operator: =
+		Value: 4
 Right
-	Operator: +
-	Left
-		var_name: a
-	Right
-		Value: 2
+	Value: 2

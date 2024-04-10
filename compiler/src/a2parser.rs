@@ -65,6 +65,41 @@ where
                     var_name: Some(var_name),
                 }
             }
+            "if" => {
+                iter.next(); // consume "if"
+                let condition = parse_expression(iter); // parse the condition
+                assert_eq!(iter.next().unwrap().value, "{"); // consume opening bracket
+                let then_branch = parse_statement(iter);
+                assert_eq!(iter.next().unwrap().value, "}"); // consume closing bracket
+
+                // Check if there is an "else" branch
+                if let Some(token) = iter.peek() {
+                    if token.value == "else" {
+                        iter.next(); // consume "else"
+                        assert_eq!(iter.next().unwrap().value, "{"); // consume opening bracket
+                        let else_branch = parse_statement(iter);
+                        assert_eq!(iter.next().unwrap().value, "}"); // consume closing bracket
+
+                        AstNode {
+                            operator: Some("if".to_string()),
+                            left: Some(Box::new(then_branch)),
+                            right: Some(Box::new(else_branch)),
+                            value: None,
+                            var_name: None,
+                        }
+                    } else {
+                        AstNode {
+                            operator: Some("if".to_string()),
+                            left: Some(Box::new(then_branch)),
+                            right: None,
+                            value: None,
+                            var_name: None,
+                        }
+                    }
+                } else {
+                    panic!("Unexpected end of tokens");
+                }
+            }
             _ => parse_expression(iter),
         }
     } else {
@@ -90,7 +125,7 @@ where
 
     while let Some(token) = iter.peek() {
         match token.value.as_str() {
-            "+" | "-" => {
+            "+" | "-" | "==" | ">" | "<" => {
                 let op = iter.next().unwrap().value.clone();
                 let right = parse_term(iter);
                 node = AstNode {

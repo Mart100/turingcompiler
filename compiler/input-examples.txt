@@ -1,0 +1,7 @@
+
+# Math operations + Comparison
+let a = (22 - 8) * 4 + 5;
+let b = a == 61;
+
+# Math operation
+(15 - 2) * 4 + 2

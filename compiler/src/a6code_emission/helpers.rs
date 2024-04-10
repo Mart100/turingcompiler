@@ -1,5 +1,3 @@
-use super::prelude::*;
-
 pub fn move_bits(destination: &str, direction: &str, next_state: &str) -> String {
     let mut instructions = "".to_string();
 
