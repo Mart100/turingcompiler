@@ -92,6 +92,27 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
                             Some(result.clone()),
                         ));
                     }
+                    "SUB" => {
+                        code.push(AssemblyInstruction::new(
+                            "LOAD".to_string(),
+                            Some(left.clone()),
+                            Some("A".to_string()),
+                        ));
+
+                        code.push(AssemblyInstruction::new(
+                            "LOAD".to_string(),
+                            Some(right.unwrap().clone()),
+                            Some("B".to_string()),
+                        ));
+
+                        code.push(AssemblyInstruction::new(operation, None, None));
+
+                        code.push(AssemblyInstruction::new(
+                            "STORE".to_string(),
+                            Some("A".to_string()),
+                            Some(result.clone()),
+                        ));
+                    }
                     "MUL" => {
                         code.push(AssemblyInstruction::new(
                             "LOAD".to_string(),
@@ -151,6 +172,7 @@ fn operator_char_to_string(op: &str) -> String {
         "-" => "SUB".to_string(),
         "*" => "MUL".to_string(),
         "/" => "DIV".to_string(),
+        "=" => "MOV".to_string(),
         _ => panic!("Unsupported operator"),
     }
 }

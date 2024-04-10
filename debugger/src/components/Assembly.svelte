@@ -56,6 +56,7 @@
 <style lang="scss">
     .assembly {
         text-align: left;
+        overflow-y: auto;
 
         .instruction-item {
             transition: background-color 0.25s;

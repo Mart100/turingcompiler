@@ -54,11 +54,15 @@
                         bind:this={rowElements[index]}
                         class:active={instruction[0] == currentInstruction}
                     >
-                        <td>{instruction[0].split("-")[0]}</td>
+                        <td data-tooltip={instruction[0].split("-")[0]}
+                            >{instruction[0].split("-")[0]}</td
+                        >
                         <td>{instruction[0].split("-")[1]}</td>
                         <td>{instruction[1].write}</td>
                         <td>{instruction[1].action}</td>
-                        <td>{instruction[1].next_state}</td>
+                        <td data-tooltip={instruction[1].next_state}
+                            >{instruction[1].next_state}</td
+                        >
                     </tr>
                 {/if}
             {/each}
@@ -77,6 +81,49 @@
             text-align: left;
             list-style-type: none;
             height: 100%;
+            table-layout: fixed;
+
+            thead th {
+                position: sticky;
+                top: 0;
+                background: black;
+                z-index: 100;
+            }
+
+            tbody tr td:first-child,
+            td:last-child {
+                max-width: 140px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                position: relative;
+                z-index: 0;
+
+                &:hover {
+                    overflow: visible;
+                    text-overflow: ellipsis;
+                }
+
+                &:hover::after {
+                    content: attr(data-tooltip);
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    white-space: nowrap;
+                    background-color: black;
+                    color: #fff;
+                    border-radius: 5px;
+                    z-index: 100;
+                    overflow: visible;
+                }
+            }
+
+            tbody tr td:last-child {
+                &:hover::after {
+                    left: auto;
+                    right: 0;
+                    min-width: 140px;
+                }
+            }
         }
         .active {
             background-color: red;

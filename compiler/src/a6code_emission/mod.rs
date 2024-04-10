@@ -2,9 +2,10 @@ mod ADD;
 mod LOAD;
 mod MUL;
 mod STORE;
+mod SUB;
 mod helpers;
 
-use crate::a4code_generator::AssemblyInstruction;
+use crate::a5code_generator::AssemblyInstruction;
 
 pub mod prelude {
     pub use super::helpers::*;
@@ -17,7 +18,7 @@ pub mod prelude {
 
 use prelude::*;
 
-use self::MUL::mul_instructions;
+use self::{MUL::mul_instructions, SUB::sub_instructions};
 
 // Transform Assembly Instructions into Turing Machine Tape and Instructions.
 // The Turing Machine Instructions are in the following format:
@@ -97,6 +98,14 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
                 instructions.extend(get_assembly_instruction_header(&instruction));
                 instructions.push(start_to_end(instruction_counter));
                 instructions.extend(add_instructions(&instruction_counter));
+
+                instruction_counter += 1;
+            }
+            // Subtract the value in B from the value in A
+            "SUB" => {
+                instructions.extend(get_assembly_instruction_header(&instruction));
+                instructions.push(start_to_end(instruction_counter));
+                instructions.extend(sub_instructions(&instruction_counter));
 
                 instruction_counter += 1;
             }

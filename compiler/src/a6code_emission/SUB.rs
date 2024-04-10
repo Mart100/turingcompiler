@@ -1,4 +1,8 @@
-5 2 1 0 1 0 0 1 1 0 3 0 0 0 0 1 1 1 0 4
+use super::prelude::*;
+
+pub fn sub_instructions(instruction_counter: &u32) -> Vec<String> {
+    let string = "
+    5 2 1 0 1 0 0 1 1 0 3 0 0 0 0 1 1 1 0 4
 
 # Start of the subtraction program
 START 5 5 R FIND_B_END
@@ -53,4 +57,7 @@ RESTORE_1 3 3 L RESTORE_1
 RESTORE_1 2 2 L RESTORE_1
 RESTORE_1 7 0 L RESTORE_1
 RESTORE_1 8 1 L RESTORE_1
-RESTORE_1 5 5 S END
+RESTORE_1 5 5 S END";
+
+    format_instructions(string.to_string(), *instruction_counter)
+}

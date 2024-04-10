@@ -30,6 +30,8 @@ export class TuringMachine {
     steps = writable<number>(0)
     ready = writable<boolean>(false)
     speed = writable<number>(10)
+    originalProgram = writable<string>("")
+    error = writable<string>("")
     assemblyInstructions = writable<AssemblyInstruction[]>([])
     status = writable<'running' | 'paused'>('paused')
     currentAsmInstruction = writable<number>(0)
@@ -78,6 +80,9 @@ export class TuringMachine {
                         return instructions
                     })
                     current_asm_instruction_idx += 1
+                }
+                if (line.startsWith('#p')) {
+                    this.originalProgram.update((value) => value += line.replace('#p', '').trim() + '\n')
                 }
                 continue
             }
@@ -182,7 +187,7 @@ export class TuringMachine {
 
     step() {
         const state = get(this.state)
-        const head = get(this.head)
+        let head = get(this.head)
         const tape = get(this.tape)
         const read = tape[head]
         const instructions = get(this.instructions)
@@ -190,25 +195,28 @@ export class TuringMachine {
 
         if (instruction) {
             tape[head] = instruction.write
+            let next_state = instruction.next_state
             this.tape.set(tape)
 
-            this.currentInstruction.set(`${state}-${read}`)
-
             if (instruction.action == 'L') {
-                this.head.update(n => n - 1)
+                head--
             } else if (instruction.action == 'R') {
-                this.head.update(n => n + 1)
+                head++
             }
 
-            this.state.set(instruction.next_state)
+            this.head.set(head)
+            this.state.set(next_state)
             this.steps.update(n => n + 1)
+            this.currentInstruction.set(`${next_state}-${tape[head]}`)
             this.update_sections()
 
             if (instruction.asm != get(this.currentAsmInstruction)) {
                 this.updateAssemblyInstructions()
             }
         } else {
+            this.error.set(`No instruction for state ${state} and read ${read}`)
             console.error(`No instruction for state ${state} and read ${read}`)
+            this.pause()
         }
     }
 
@@ -279,11 +287,20 @@ export class TuringMachine {
         this.instructions.set(new Map())
         this.tape.set([])
         this.head.set(0)
+        this.speed.set(10)
         this.state.set('START')
         this.steps.set(0)
+        this.error.set("")
+        this.originalProgram.set("")
         clearInterval(this.interval)
         this.assemblyInstructions.set([])
         this.currentAsmInstruction.set(0)
+    }
+
+    delete() {
+        this.clear()
+        this.ready.set(false)
+        this.fileString = ""
     }
 
     reset(): void {

@@ -5,6 +5,7 @@ pub enum TokenType {
     Operator,
     Number,
     Parenthesis,
+    Semicolon,
 }
 
 #[derive(Debug, Clone)]
@@ -13,7 +14,11 @@ pub struct Token {
     pub value: String,
 }
 
-pub fn lexer(code: &str) -> Vec<Token> {
+pub fn lexer(mut code: String) -> Vec<Token> {
+    // preprocess the code to add spaces around the parenthesis
+    code = code.replace("(", " ( ").replace(")", " ) ");
+    code = code.replace(";", " ; ");
+
     // For simplicity, consider each line as a single statement and split it by spaces.
     code.lines()
         .flat_map(|line| {
@@ -29,6 +34,10 @@ pub fn lexer(code: &str) -> Vec<Token> {
                     },
                     "(" | ")" => Token {
                         type_: TokenType::Parenthesis,
+                        value: word.to_string(),
+                    },
+                    ";" => Token {
+                        type_: TokenType::Semicolon,
                         value: word.to_string(),
                     },
                     _ if word.parse::<u8>().is_ok() => Token {

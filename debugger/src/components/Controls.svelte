@@ -21,10 +21,22 @@
     interpreter.reset();
   };
 
+  const step = () => {
+    interpreter.step();
+  };
+
   let speed = "10";
+
+  interpreter.speed.subscribe((value) => {
+    speed = value.toString();
+  });
+
   const changeSpeed = (event: Event) => {
-    speed = (event.target as HTMLSelectElement).value;
-    interpreter.setSpeed(Number(speed));
+    interpreter.setSpeed(Number((event.target as HTMLSelectElement).value));
+  };
+
+  const removeProgram = () => {
+    interpreter.delete();
   };
 </script>
 
@@ -33,6 +45,7 @@
     >{status == "paused" ? "Start" : "Pause"}</button
   >
   <button on:click={reset}>Reset</button>
+  <button on:click={step}>Step</button>
   <select bind:value={speed} on:change={changeSpeed}>
     <!-- Add this dropdown -->
     <option value="1">Very Slow</option>
@@ -43,6 +56,7 @@
     <option value="999">Super Fast</option>
     <option value="1000">Full Speed</option>
   </select>
+  <button on:click={removeProgram}>Remove Program</button>
 </div>
 
 <style lang="scss">
