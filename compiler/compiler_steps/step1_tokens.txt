@@ -28,7 +28,9 @@ Token { type_: Identifier, value: "b" }
 Token { type_: Bracket, value: "{" }
 Token { type_: Identifier, value: "c" }
 Token { type_: Operator, value: "=" }
-Token { type_: Number, value: "12" }
+Token { type_: Identifier, value: "a" }
+Token { type_: Operator, value: "+" }
+Token { type_: Number, value: "39" }
 Token { type_: Semicolon, value: ";" }
 Token { type_: Bracket, value: "}" }
 Token { type_: Conditional, value: "else" }
@@ -38,3 +40,11 @@ Token { type_: Operator, value: "=" }
 Token { type_: Number, value: "0" }
 Token { type_: Semicolon, value: ";" }
 Token { type_: Bracket, value: "}" }
+Token { type_: Semicolon, value: ";" }
+Token { type_: Keyword, value: "let" }
+Token { type_: Identifier, value: "d" }
+Token { type_: Operator, value: "=" }
+Token { type_: Identifier, value: "c" }
+Token { type_: Operator, value: "+" }
+Token { type_: Identifier, value: "a" }
+Token { type_: Semicolon, value: ";" }

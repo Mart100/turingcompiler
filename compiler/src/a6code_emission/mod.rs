@@ -51,19 +51,38 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
 
     let storage_seperator = &symtou8(TapeSymbols::StorageSeperator).to_string();
 
-    let start_to_end = |i: u32| format!("\n{}END 5 5 S {}START", i - 1, i);
+    let end_to_next_start = |i: u32| format!("\n{}END 5 5 S {}START", i - 1, i);
 
     for instruction in assembly {
-        let operation = instruction.operation.clone();
-        let operand1 = instruction.operand1.clone();
-        let operand2 = instruction.operand2.clone();
+        let header = get_assembly_instruction_header(&instruction.to_string());
 
-        match operation.as_str() {
+        match instruction {
+            // Jump to a label
+            AssemblyInstruction::JMP { label } => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
+                instructions.push(format!("{instruction_counter}START 5 5 S LABEL_{label}"));
+                instruction_counter += 1;
+            }
+
+            // Define a label
+            AssemblyInstruction::LABEL { label } => {
+                instructions.extend(header);
+                instructions.push(format!("LABEL_{label} 5 5 S END_{instruction_counter}"));
+                instruction_counter += 1;
+            }
+
+            // Jump to a label if the value in A is not zero
+            AssemblyInstruction::JNZ { label } => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
+                instructions.push(format!("{instruction_counter}START 5 5 S LABEL_{label}"));
+                instruction_counter += 1;
+            }
+
             // Store a value in the tape storage
-            "SAVE" => {
-                let address = operand1.unwrap(); // This is the address to save
-                let value = operand2.unwrap(); // This is the value to save
-                let value_binary = format!("{:08b}", value.parse::<u8>().unwrap());
+            AssemblyInstruction::SAVE { destination, value } => {
+                let value_binary = format!("{:08b}", value);
 
                 let mut vec = value_binary
                     .split("")
@@ -78,73 +97,81 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
                 new_tape_storage.extend(tape_storage);
                 tape_storage = new_tape_storage;
             }
-            // Load a value from the tape storage into the working area
-            "LOAD" => {
-                // This is the address to load from the storage
-                let address = operand1.unwrap().replace("S", "").parse::<u32>().unwrap();
-                // This is the working space to load into. Either A or B.
-                let working_space = operand2.unwrap();
 
-                instructions.extend(get_assembly_instruction_header(&instruction));
-                instructions.push(start_to_end(instruction_counter));
+            // Load a value from the tape storage into the working area
+            AssemblyInstruction::LOAD {
+                destination,
+                source,
+            } => {
+                let storage_address = source.replace("S", "").parse::<u32>().unwrap();
+                let working_space = destination;
+
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(load_instructions(
                     &instruction_counter,
-                    address,
+                    storage_address,
                     working_space,
                 ));
 
                 instruction_counter += 1;
             }
-            // Add two values in the working area together
-            "ADD" => {
-                instructions.extend(get_assembly_instruction_header(&instruction));
-                instructions.push(start_to_end(instruction_counter));
+
+            // Add two values in A and B, and store the result in A
+            AssemblyInstruction::ADD => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(add_instructions(&instruction_counter));
 
                 instruction_counter += 1;
             }
+
             // Subtract the value in B from the value in A
-            "SUB" => {
-                instructions.extend(get_assembly_instruction_header(&instruction));
-                instructions.push(start_to_end(instruction_counter));
+            AssemblyInstruction::SUB => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(sub_instructions(&instruction_counter));
 
                 instruction_counter += 1;
             }
+
             // Multiply B and C, and store the result in A
-            "MUL" => {
-                instructions.extend(get_assembly_instruction_header(&instruction));
-                instructions.push(start_to_end(instruction_counter));
+            AssemblyInstruction::MUL => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(mul_instructions(&instruction_counter));
 
                 instruction_counter += 1;
             }
-            // Check if the value in A is zero, if it is put 0 in A, otherwise put 1 in A
-            "ISZERO" => {
-                instructions.extend(get_assembly_instruction_header(&instruction));
-                instructions.push(start_to_end(instruction_counter));
+
+            // If the value in A is zero, put 0 in A, otherwise put 1 in A
+            AssemblyInstruction::ISZERO => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(iszero_instruction(&instruction_counter));
 
                 instruction_counter += 1;
             }
-            // Store a value from the working area into the tape storage
-            "STORE" => {
-                // This is the working space to load into. Either A or B.
-                let working_space = operand1.unwrap();
-                // This is the address to load from the storage
-                let address = operand2.unwrap().replace("S", "").parse::<u32>().unwrap();
 
-                instructions.extend(get_assembly_instruction_header(&instruction));
-                instructions.push(start_to_end(instruction_counter));
+            // STORE a value from the working area into the tape storage
+            AssemblyInstruction::STORE {
+                destination,
+                source,
+            } => {
+                let working_space = source;
+                let storage_address = destination.replace("S", "").parse::<u32>().unwrap();
+
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(store_instructions(
                     &instruction_counter,
-                    address,
+                    storage_address,
                     working_space,
                 ));
 
                 instruction_counter += 1;
             }
-            _ => (),
+            _ => panic!("Instruction {} not implemented", instruction.to_string()),
         }
     }
 
@@ -159,8 +186,8 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
     (tape, instructions)
 }
 
-fn get_assembly_instruction_header(instruction: &AssemblyInstruction) -> Vec<String> {
-    format!("\n#\n### {}\n#\n", instruction.to_string())
+fn get_assembly_instruction_header(instruction: &str) -> Vec<String> {
+    format!("\n#\n### {}\n#\n", instruction)
         .split("\n")
         .map(|s| s.to_string())
         .collect()

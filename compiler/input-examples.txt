@@ -5,3 +5,13 @@ let b = a == 61;
 
 # Math operation
 (15 - 2) * 4 + 2
+
+# If statement
+let a = (22 - 8) * 4 + 5;
+let b = a == 61;
+let c = 0;
+if b {
+    c = 12;
+} else {
+    c = 0;
+};

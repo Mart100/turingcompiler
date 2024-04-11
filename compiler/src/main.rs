@@ -24,12 +24,8 @@ fn main() {
     fs::write("compiler_steps/step1_tokens.txt", &tokens_string).unwrap();
 
     let ast = parser(tokens);
-    let ast_string = format_ast_vec(&ast);
-    fs::write(
-        "compiler_steps/step2_ast.txt",
-        format!("{:?}\n{}", ast, &ast_string),
-    )
-    .unwrap();
+    let ast_json = serde_json::to_string(&ast).unwrap();
+    fs::write("compiler_steps/step2_ast.json", format!("{}", &ast_json)).unwrap();
 
     let tac = tac_generator(&ast);
     let tac_string = tacvec_to_string(&tac);

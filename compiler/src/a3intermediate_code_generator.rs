@@ -2,39 +2,61 @@ use std::collections::HashMap;
 
 use crate::a2parser::AstNode;
 
+// #[derive(Debug, Clone)]
+// pub struct TACInstruction {
+//     pub result: String,
+//     pub left: String,
+//     pub operator: Option<String>,
+//     pub right: Option<String>,
+// }
+
 #[derive(Debug, Clone)]
-pub struct TACInstruction {
-    pub result: String,
-    pub left: String,
-    pub operator: Option<String>,
-    pub right: Option<String>,
+pub enum TACInstruction {
+    Assignment {
+        var_name: String,
+        value: String,
+    },
+    BinaryOperation {
+        result: String,
+        left: String,
+        operator: String,
+        right: String,
+    },
+    Label {
+        label: String,
+    },
+    Goto {
+        label: String,
+    },
+    IfGoto {
+        condition: String,
+        label: String,
+    },
 }
 
 impl TACInstruction {
-    pub fn new(
-        result: String,
-        left: String,
-        operator: Option<String>,
-        right: Option<String>,
-    ) -> Self {
-        TACInstruction {
-            result,
-            left,
-            operator,
-            right,
-        }
-    }
-
     pub fn to_string(&self) -> String {
-        match &self.operator {
-            Some(op) => {
-                if let Some(right) = &self.right {
-                    format!("{} = {} {} {}", self.result, self.left, op, right)
-                } else {
-                    format!("{} = {}", self.result, self.left)
-                }
+        match &self {
+            TACInstruction::BinaryOperation {
+                result,
+                left,
+                operator,
+                right,
+            } => {
+                format!("{} = {} {} {}", result, left, operator, right)
             }
-            None => format!("{} = {}", self.result, self.left),
+            TACInstruction::Assignment { var_name, value } => {
+                format!("{} = {}", var_name, value)
+            }
+            TACInstruction::Label { label } => {
+                format!("{}:", label)
+            }
+            TACInstruction::Goto { label } => {
+                format!("goto {}", label)
+            }
+            TACInstruction::IfGoto { condition, label } => {
+                format!("if {} goto {}", condition, label)
+            }
         }
     }
 }
@@ -57,82 +79,129 @@ fn generate_tac(
     temp_counter: &mut u32,
     var_map: &mut HashMap<String, String>,
 ) -> String {
-    // println!("{:?}", node);
-    // if the node is an assignment
-    if node.operator.as_deref() == Some("=") && node.left.is_none() {
-        if let Some(var_name) = &node.var_name {
-            if let Some(right) = &node.right {
-                let right_tac = generate_tac(&*right, instructions, temp_counter, var_map);
+    match node {
+        AstNode::Declaration(declaration) => {
+            let var_name = &declaration.var_name;
+            let value = &declaration.value;
+            let right_tac = generate_tac(&*value, instructions, temp_counter, var_map);
 
-                let result = format!("t{}", *temp_counter);
-                *temp_counter += 1;
-                var_map.insert(var_name.clone(), result.clone());
+            let result = format!("t{}", *temp_counter);
+            *temp_counter += 1;
+            var_map.insert(var_name.clone(), result.clone());
 
-                // println!("! {:?}", var_map);
-
-                instructions.push(TACInstruction::new(
-                    result.clone(),
-                    right_tac,
-                    Some("=".to_string()),
-                    None,
-                ));
-                return result;
-            }
+            instructions.push(TACInstruction::Assignment {
+                var_name: result.clone(),
+                value: right_tac,
+            });
+            return result;
         }
-    }
-
-    // if the node is an operator
-    if let Some(left) = &node.left {
-        let left_tac = generate_tac(&*left, instructions, temp_counter, var_map);
-        if let Some(right) = &node.right {
-            let right_tac = generate_tac(&*right, instructions, temp_counter, var_map);
-            if let Some(op) = &node.operator {
-                let result = format!("t{}", *temp_counter);
-                *temp_counter += 1;
-                instructions.push(TACInstruction::new(
-                    result.clone(),
-                    left_tac,
-                    Some(op.clone()),
-                    Some(right_tac),
-                ));
-                return result;
-            }
-        }
-    }
-
-    // if the node is a value
-    if let Some(value) = &node.value {
-        let result = format!("t{}", *temp_counter);
-        *temp_counter += 1;
-        instructions.push(TACInstruction::new(
-            result.clone(),
-            value.to_string(),
-            None,
-            None,
-        ));
-        return result;
-    }
-
-    if node.operator.is_none()
-        && node.left.is_none()
-        && node.right.is_none()
-        && node.value.is_none()
-    {
-        if let Some(var_name) = &node.var_name {
-            // println!("!! {:?} {:?}", var_map, var_name);
+        AstNode::Assignment(assignment) => {
+            let var_name = &assignment.var_name;
+            let value = &assignment.value;
+            let right_tac = generate_tac(&*value, instructions, temp_counter, var_map);
 
             let result = if let Some(temp_var) = var_map.get(var_name) {
-                // If var_name is already in var_map, use the existing temporary variable
                 temp_var.clone()
             } else {
-                // If var_name is not in var_map, create a new temporary variable
                 let temp_var = format!("t{}", *temp_counter);
                 *temp_counter += 1;
-                var_map.insert(var_name.clone(), temp_var.clone()); // store the variable in the variable map
+                var_map.insert(var_name.clone(), temp_var.clone());
+                temp_var
+            };
+
+            instructions.push(TACInstruction::Assignment {
+                var_name: result.clone(),
+                value: right_tac,
+            });
+            return result;
+        }
+        AstNode::BinaryOperation(binary_operation) => {
+            let left_tac =
+                generate_tac(&*binary_operation.left, instructions, temp_counter, var_map);
+            let right_tac = generate_tac(
+                &*binary_operation.right,
+                instructions,
+                temp_counter,
+                var_map,
+            );
+            let result = format!("t{}", *temp_counter);
+            *temp_counter += 1;
+            instructions.push(TACInstruction::BinaryOperation {
+                result: result.clone(),
+                left: left_tac,
+                operator: binary_operation.operator.clone(),
+                right: right_tac,
+            });
+            return result;
+        }
+        AstNode::Constant(constant) => {
+            let result = format!("t{}", *temp_counter);
+            *temp_counter += 1;
+            instructions.push(TACInstruction::Assignment {
+                var_name: result.clone(),
+                value: constant.value.clone(),
+            });
+            return result;
+        }
+        AstNode::Variable(variable) => {
+            let var_name = &variable.name;
+            let result = if let Some(temp_var) = var_map.get(var_name) {
+                temp_var.clone()
+            } else {
+                let temp_var = format!("t{}", *temp_counter);
+                *temp_counter += 1;
+                var_map.insert(var_name.clone(), temp_var.clone());
                 temp_var
             };
             return result;
         }
+        AstNode::Conditional(conditional) => {
+            let condition_tac =
+                generate_tac(&*conditional.condition, instructions, temp_counter, var_map);
+
+            let true_label = format!("L{}", *temp_counter);
+            *temp_counter += 1;
+            let false_label = format!("L{}", *temp_counter);
+            *temp_counter += 1;
+            let end_label = format!("L{}", *temp_counter);
+            *temp_counter += 1;
+
+            instructions.push(TACInstruction::IfGoto {
+                condition: condition_tac,
+                label: true_label.clone(),
+            });
+            instructions.push(TACInstruction::Goto {
+                label: false_label.clone(),
+            });
+
+            instructions.push(TACInstruction::Label {
+                label: true_label.clone(),
+            });
+            let then_branch_tac = generate_tac(
+                &*conditional.then_branch,
+                instructions,
+                temp_counter,
+                var_map,
+            );
+            instructions.push(TACInstruction::Goto {
+                label: end_label.clone(),
+            });
+
+            instructions.push(TACInstruction::Label {
+                label: false_label.clone(),
+            });
+            if let Some(else_branch) = &conditional.else_branch {
+                let else_branch_tac =
+                    generate_tac(&*else_branch, instructions, temp_counter, var_map);
+            }
+
+            instructions.push(TACInstruction::Label {
+                label: end_label.clone(),
+            });
+
+            return "".to_string();
+        }
+        _ => {}
     }
 
     println!("{:?}", node);
