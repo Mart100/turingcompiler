@@ -32,7 +32,11 @@
   });
 
   const changeSpeed = (event: Event) => {
-    interpreter.setSpeed(Number((event.target as HTMLSelectElement).value));
+    interpreter.set_speed(Number((event.target as HTMLSelectElement).value));
+  };
+
+  const stepBack = () => {
+    interpreter.step_back();
   };
 
   const removeProgram = () => {
@@ -46,8 +50,8 @@
   >
   <button on:click={reset}>Reset</button>
   <button on:click={step}>Step</button>
+  <button on:click={stepBack}>Step back</button>
   <select bind:value={speed} on:change={changeSpeed}>
-    <!-- Add this dropdown -->
     <option value="1">Very Slow</option>
     <option value="5">Slow</option>
     <option value="10">Average</option>

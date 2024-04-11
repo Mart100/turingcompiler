@@ -80,7 +80,7 @@
         .table {
             text-align: left;
             list-style-type: none;
-            height: 100%;
+
             table-layout: fixed;
 
             thead th {

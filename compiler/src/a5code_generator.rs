@@ -3,6 +3,7 @@ use crate::a3intermediate_code_generator::TACInstruction;
 #[derive(Debug, Clone)]
 pub enum AssemblyInstruction {
     SAVE { destination: String, value: u8 },
+    SET { destination: String, value: u8 },
     LOAD { destination: String, source: String },
     STORE { destination: String, source: String },
     JMP { label: String },
@@ -10,7 +11,9 @@ pub enum AssemblyInstruction {
     LABEL { label: String },
     ADD,
     SUB,
+    SUB_SAFE,
     MUL,
+    NOT,
     DIV,
     ISZERO,
 }
@@ -29,11 +32,16 @@ impl AssemblyInstruction {
                 destination,
                 source,
             } => format!("STORE {} {}", destination, source),
+            AssemblyInstruction::SET { destination, value } => {
+                format!("SET {} {}", destination, value)
+            }
             AssemblyInstruction::JMP { label } => format!("JMP {}", label),
             AssemblyInstruction::JNZ { label } => format!("JNZ {}", label),
             AssemblyInstruction::LABEL { label } => format!("{}:", label),
             AssemblyInstruction::ADD => "ADD".to_string(),
             AssemblyInstruction::SUB => "SUB".to_string(),
+            AssemblyInstruction::SUB_SAFE => "SUB_SAFE".to_string(),
+            AssemblyInstruction::NOT => "NOT".to_string(),
             AssemblyInstruction::MUL => "MUL".to_string(),
             AssemblyInstruction::DIV => "DIV".to_string(),
             AssemblyInstruction::ISZERO => "ISZERO".to_string(),
@@ -43,6 +51,7 @@ impl AssemblyInstruction {
 
 pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
     let mut storage = Vec::new();
+    let mut initializations = Vec::new();
     let mut savescode = Vec::new();
     let mut code = Vec::new();
     let mut temp_counter = 1;
@@ -54,11 +63,20 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
                 value,
             } => {
                 tvar_to_svar(&mut var_name);
-                savescode.push(AssemblyInstruction::SAVE {
-                    destination: var_name.clone(),
-                    value: value.parse().unwrap(),
-                });
-                storage.push(var_name);
+                println!("var_name: {}, {}", var_name, value);
+                if !initializations.contains(&var_name) {
+                    initializations.push(var_name.clone());
+                    savescode.push(AssemblyInstruction::SAVE {
+                        destination: var_name.clone(),
+                        value: value.parse().unwrap(),
+                    });
+                    storage.push(var_name);
+                } else {
+                    code.push(AssemblyInstruction::SET {
+                        destination: var_name.clone(),
+                        value: value.parse().unwrap(),
+                    });
+                }
             }
             TACInstruction::IfGoto {
                 mut condition,
@@ -71,11 +89,30 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
                 });
                 code.push(AssemblyInstruction::JNZ { label });
             }
+            TACInstruction::IfNotGoto {
+                mut condition,
+                label,
+            } => {
+                tvar_to_svar(&mut condition);
+                code.push(AssemblyInstruction::LOAD {
+                    destination: "A".to_string(),
+                    source: condition.clone(),
+                });
+                code.push(AssemblyInstruction::ISZERO);
+                code.push(AssemblyInstruction::JNZ { label });
+            }
             TACInstruction::Goto { label } => {
                 code.push(AssemblyInstruction::JMP { label });
             }
             TACInstruction::Label { label } => {
                 code.push(AssemblyInstruction::LABEL { label });
+            }
+            TACInstruction::Output { mut value } => {
+                tvar_to_svar(&mut value);
+                code.push(AssemblyInstruction::LOAD {
+                    destination: "A".to_string(),
+                    source: value.clone(),
+                });
             }
             TACInstruction::BinaryOperation {
                 mut result,
@@ -145,6 +182,46 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
                             source: "A".to_string(),
                         });
                     }
+                    "GT" => {
+                        code.push(AssemblyInstruction::LOAD {
+                            destination: "A".to_string(),
+                            source: left.clone(),
+                        });
+
+                        code.push(AssemblyInstruction::LOAD {
+                            destination: "B".to_string(),
+                            source: right.clone(),
+                        });
+
+                        code.push(AssemblyInstruction::SUB_SAFE);
+                        code.push(AssemblyInstruction::ISZERO);
+                        code.push(AssemblyInstruction::NOT);
+
+                        code.push(AssemblyInstruction::STORE {
+                            destination: result.clone(),
+                            source: "A".to_string(),
+                        });
+                    }
+                    "LT" => {
+                        code.push(AssemblyInstruction::LOAD {
+                            destination: "A".to_string(),
+                            source: right.clone(),
+                        });
+
+                        code.push(AssemblyInstruction::LOAD {
+                            destination: "B".to_string(),
+                            source: left.clone(),
+                        });
+
+                        code.push(AssemblyInstruction::SUB_SAFE);
+                        code.push(AssemblyInstruction::ISZERO);
+                        code.push(AssemblyInstruction::NOT);
+
+                        code.push(AssemblyInstruction::STORE {
+                            destination: result.clone(),
+                            source: "A".to_string(),
+                        });
+                    }
                     "MUL" => {
                         code.push(AssemblyInstruction::LOAD {
                             destination: "B".to_string(),
@@ -203,6 +280,10 @@ fn operator_char_to_string(op: &str) -> String {
         "/" => "DIV".to_string(),
         "=" => "MOV".to_string(),
         "==" => "CMP".to_string(),
+        ">" => "GT".to_string(),
+        ">=" => "GE".to_string(),
+        "<" => "LT".to_string(),
+        "<=" => "LE".to_string(),
         _ => panic!("Unsupported operator"),
     }
 }

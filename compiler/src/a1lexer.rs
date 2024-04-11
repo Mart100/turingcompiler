@@ -7,7 +7,6 @@ pub enum TokenType {
     Parenthesis,
     Semicolon,
     ComparisonOperator,
-    Conditional,
     Bracket,
 }
 
@@ -31,6 +30,18 @@ pub fn lexer(mut code: String) -> Vec<Token> {
                         type_: TokenType::Keyword,
                         value: word.to_string(),
                     },
+                    "return" => Token {
+                        type_: TokenType::Keyword,
+                        value: word.to_string(),
+                    },
+                    "while" => Token {
+                        type_: TokenType::Keyword,
+                        value: word.to_string(),
+                    },
+                    "if" | "else" => Token {
+                        type_: TokenType::Keyword,
+                        value: word.to_string(),
+                    },
                     "=" | "+" | "*" => Token {
                         type_: TokenType::Operator,
                         value: word.to_string(),
@@ -45,10 +56,6 @@ pub fn lexer(mut code: String) -> Vec<Token> {
                     },
                     "==" | ">" | "<" => Token {
                         type_: TokenType::ComparisonOperator,
-                        value: word.to_string(),
-                    },
-                    "if" | "else" => Token {
-                        type_: TokenType::Conditional,
                         value: word.to_string(),
                     },
                     "{" | "}" => Token {

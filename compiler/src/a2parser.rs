@@ -12,54 +12,43 @@ use crate::a1lexer::Token;
 //     pub value: Option<String>,
 //     pub var_name: Option<String>,
 // }
-
-#[derive(Debug, Serialize)]
-pub struct VariableNode {
-    pub name: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ConditionalNode {
-    pub condition: Box<AstNode>,
-    pub then_branch: Box<AstNode>,
-    pub else_branch: Option<Box<AstNode>>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ConstantNode {
-    pub value: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct BinaryOperationNode {
-    pub operator: String,
-    pub left: Box<AstNode>,
-    pub right: Box<AstNode>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct AssignmentNode {
-    pub var_name: String,
-    pub value: Box<AstNode>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct DeclarationNode {
-    pub var_name: String,
-    pub value: Box<AstNode>,
-}
-
 #[derive(Debug, Serialize)]
 pub enum AstNode {
-    Variable(VariableNode),
-    Constant(ConstantNode),
-    BinaryOperation(BinaryOperationNode),
-    Conditional(ConditionalNode),
-    Assignment(AssignmentNode),
-    Declaration(DeclarationNode),
+    Variable {
+        name: String,
+    },
+    Constant {
+        value: String,
+    },
+    BinaryOperation {
+        operator: String,
+        left: Box<AstNode>,
+        right: Box<AstNode>,
+    },
+    Conditional {
+        condition: Box<AstNode>,
+        then_branch: Box<AstNode>,
+        else_branch: Option<Box<AstNode>>,
+    },
+    Assignment {
+        var_name: String,
+        value: Box<AstNode>,
+    },
+    Declaration {
+        var_name: String,
+        value: Box<AstNode>,
+    },
+    Return {
+        value: Box<AstNode>,
+    },
+    While {
+        condition: Box<AstNode>,
+        body: Box<AstNode>,
+    },
+    Body(Vec<AstNode>),
 }
 
-pub fn parser(tokens: Vec<Token>) -> Vec<AstNode> {
+pub fn parser(tokens: Vec<Token>) -> AstNode {
     let mut iter = tokens.into_iter().peekable();
     let mut ast_nodes = Vec::new();
 
@@ -67,7 +56,28 @@ pub fn parser(tokens: Vec<Token>) -> Vec<AstNode> {
         ast_nodes.push(parse_statement(&mut iter));
     }
 
-    ast_nodes
+    AstNode::Body(ast_nodes)
+}
+
+fn parse_body<I>(iter: &mut Peekable<I>) -> AstNode
+where
+    I: Iterator<Item = Token>,
+{
+    let mut nodes = Vec::new();
+
+    iter.next(); // consume opening bracket
+
+    while let Some(token) = iter.peek() {
+        match token.value.as_str() {
+            "}" => {
+                iter.next(); // consume closing bracket
+                break;
+            }
+            _ => nodes.push(parse_statement(iter)),
+        }
+    }
+
+    AstNode::Body(nodes)
 }
 
 fn parse_statement<I>(iter: &mut Peekable<I>) -> AstNode
@@ -81,10 +91,10 @@ where
                 let var_name = iter.next().unwrap().value.clone(); // get variable name
                 assert_eq!(iter.next().unwrap().value, "="); // consume "="
                 let right = parse_expression(iter); // parse the right-hand side
-                AstNode::Declaration(DeclarationNode {
+                AstNode::Declaration {
                     value: Box::new(right),
                     var_name,
-                })
+                }
             }
             "if" => {
                 iter.next(); // consume "if"
@@ -101,20 +111,36 @@ where
                         let else_branch = parse_statement(iter);
                         assert_eq!(iter.next().unwrap().value, "}"); // consume closing bracket
 
-                        AstNode::Conditional(ConditionalNode {
+                        AstNode::Conditional {
                             condition: Box::new(condition),
                             then_branch: Box::new(then_branch),
                             else_branch: Some(Box::new(else_branch)),
-                        })
+                        }
                     } else {
-                        AstNode::Conditional(ConditionalNode {
+                        AstNode::Conditional {
                             condition: Box::new(condition),
                             then_branch: Box::new(then_branch),
                             else_branch: None,
-                        })
+                        }
                     }
                 } else {
                     panic!("Unexpected end of tokens");
+                }
+            }
+            "while" => {
+                iter.next(); // consumes "while"
+                let condition = parse_expression(iter); // parse the condition
+                let body = parse_body(iter); // parse the body
+                AstNode::While {
+                    condition: Box::new(condition),
+                    body: Box::new(body),
+                }
+            }
+            "return" => {
+                iter.next(); // consume "return"
+                let value = parse_expression(iter); // parse the return value
+                AstNode::Return {
+                    value: Box::new(value),
                 }
             }
             _ => {
@@ -122,10 +148,10 @@ where
                 if iter.peek().unwrap().value == "=" {
                     iter.next(); // consume "="
                     let right = parse_expression(iter); // parse the right-hand side
-                    AstNode::Assignment(AssignmentNode {
+                    AstNode::Assignment {
                         value: Box::new(right),
                         var_name,
-                    })
+                    }
                 } else {
                     parse_expression(iter)
                 }
@@ -141,8 +167,7 @@ where
             iter.next();
         }
         _ => {
-            println!("{:?}", iter.collect::<Vec<_>>());
-            panic!("Expected semicolon at the end of statement")
+            panic!("Expected semicolon at the end of statement: {:?}", node);
         }
     };
 
@@ -160,11 +185,11 @@ where
             "+" | "-" | "==" | ">" | "<" => {
                 let op = iter.next().unwrap().value.clone();
                 let right = parse_term(iter);
-                node = AstNode::BinaryOperation(BinaryOperationNode {
+                node = AstNode::BinaryOperation {
                     operator: op,
                     left: Box::new(node),
                     right: Box::new(right),
-                });
+                }
             }
             _ => break,
         }
@@ -184,11 +209,11 @@ where
             "*" | "/" => {
                 let op = iter.next().unwrap().value.clone();
                 let right = parse_factor(iter);
-                node = AstNode::BinaryOperation(BinaryOperationNode {
+                node = AstNode::BinaryOperation {
                     operator: op,
                     left: Box::new(node),
                     right: Box::new(right),
-                });
+                }
             }
             _ => break,
         }
@@ -208,12 +233,12 @@ where
                 assert_eq!(iter.next().unwrap().value, ")");
                 node
             }
-            num if num.parse::<u8>().is_ok() => AstNode::Constant(ConstantNode {
+            num if num.parse::<u8>().is_ok() => AstNode::Constant {
                 value: num.to_string(),
-            }),
-            id if id.parse::<String>().is_ok() => AstNode::Variable(VariableNode {
+            },
+            id if id.parse::<String>().is_ok() => AstNode::Variable {
                 name: id.to_string(),
-            }),
+            },
             _ => panic!("Unexpected token in parse_factor: {:?}", token),
         }
     } else {

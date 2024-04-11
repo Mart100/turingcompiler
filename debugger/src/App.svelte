@@ -89,14 +89,14 @@
     display: flex;
     flex-direction: row;
     font-weight: bold;
-    max-height: 60%;
+    height: 60%;
     padding: 2em;
     background-color: rgb(30, 30, 30);
     justify-content: space-between;
 
     .things2 {
       text-align: left;
-      width: 20%;
+      width: 25%;
     }
   }
 

@@ -18,6 +18,7 @@ export interface TuringInstruction {
 export interface AssemblyInstruction {
     instruction: string
     status: string
+    breakpoint: boolean
     sections: TapeSection[]
 }
 
@@ -30,6 +31,7 @@ export class TuringMachine {
     steps = writable<number>(0)
     ready = writable<boolean>(false)
     speed = writable<number>(10)
+    output = writable<string>("?")
     originalProgram = writable<string>("")
     error = writable<string>("")
     assemblyInstructions = writable<AssemblyInstruction[]>([])
@@ -38,6 +40,15 @@ export class TuringMachine {
     currentInstruction = writable<string>("")
     fileString = ""
     interval = 0
+    history: {
+        tape: number[]
+        head: number
+        state: string
+        currentInstruction: string
+        assemblyInstructions: AssemblyInstruction[]
+        currentAsmInstruction: number
+        steps: number
+    }[] = []
 
     load_file(file: string) {
 
@@ -69,20 +80,21 @@ export class TuringMachine {
 
             if (line == '') continue
             if (line.startsWith('#')) {
-                if (line.startsWith('###')) {
-                    current_asm_instruction = line.replace('###', '').trim()
+                if (line.startsWith('#asm')) {
+                    current_asm_instruction = line.replace('#asm ', '').trim()
                     this.assemblyInstructions.update((instructions) => {
                         instructions.push({
                             instruction: current_asm_instruction,
                             status: current_asm_instruction_idx == 0 ? "current" : "pending",
+                            breakpoint: false,
                             sections: []
                         })
                         return instructions
                     })
                     current_asm_instruction_idx += 1
                 }
-                if (line.startsWith('#p')) {
-                    this.originalProgram.update((value) => value += line.replace('#p', '').trim() + '\n')
+                if (line.startsWith('#program')) {
+                    this.originalProgram.update((value) => value += line.replace('#program ', '') + '\n')
                 }
                 continue
             }
@@ -185,6 +197,13 @@ export class TuringMachine {
         this.sections.set(sections);
     }
 
+    set_breakpoint(index: number) {
+        this.assemblyInstructions.update((instructions) => {
+            instructions[index].breakpoint = !instructions[index].breakpoint
+            return instructions
+        })
+    }
+
     step() {
         const state = get(this.state)
         let head = get(this.head)
@@ -192,8 +211,29 @@ export class TuringMachine {
         const read = tape[head]
         const instructions = get(this.instructions)
         const instruction = instructions.get(`${state}-${read}`)
+        const asmInstructions = get(this.assemblyInstructions)
+        const currentAsm = get(this.currentAsmInstruction)
+        const currentAsmInstruction = asmInstructions[currentAsm - 1]
+
 
         if (instruction) {
+
+            if (currentAsmInstruction && currentAsmInstruction.breakpoint) {
+                this.pause()
+                return
+            }
+
+            this.history.push({
+                state,
+                head,
+                tape: [...tape],
+                currentInstruction: get(this.currentInstruction),
+                assemblyInstructions: get(this.assemblyInstructions),
+                currentAsmInstruction: get(this.currentAsmInstruction),
+                steps: get(this.steps),
+            });
+
+
             tape[head] = instruction.write
             let next_state = instruction.next_state
             this.tape.set(tape)
@@ -210,8 +250,11 @@ export class TuringMachine {
             this.currentInstruction.set(`${next_state}-${tape[head]}`)
             this.update_sections()
 
+
+
             if (instruction.asm != get(this.currentAsmInstruction)) {
-                this.updateAssemblyInstructions()
+                console.log(instruction.asm, get(this.currentAsmInstruction))
+                this.update_assembly_instructions(instruction.asm)
             }
         } else {
             this.error.set(`No instruction for state ${state} and read ${read}`)
@@ -220,26 +263,46 @@ export class TuringMachine {
         }
     }
 
-    updateAssemblyInstructions() {
-        this.assemblyInstructions.update((instructions) => {
-            let sectionsString = ""
-            let asmIdx = get(this.currentAsmInstruction)
+    step_back() {
+        console.log(this.history)
+        if (this.history.length == 0) return
 
+        const { state, head, tape, currentInstruction, steps, currentAsmInstruction, assemblyInstructions } = this.history.pop()!
+
+        this.error.set("")
+        this.state.set(state)
+        this.head.set(head)
+        this.tape.set(tape)
+        this.steps.set(steps)
+        this.currentInstruction.set(currentInstruction)
+        this.assemblyInstructions.set(assemblyInstructions)
+        this.currentAsmInstruction.set(currentAsmInstruction)
+        this.update_sections()
+    }
+
+    update_assembly_instructions(currentAsm: number = 0) {
+        this.assemblyInstructions.update((instructions) => {
+
+            let asmIdx = currentAsm - 1
             if (asmIdx == 0) return instructions
 
             let sections = get(this.sections)
-            if (instructions[asmIdx - 1]) {
-                instructions[asmIdx - 1].sections = JSON.parse(JSON.stringify(sections))
-                instructions[asmIdx - 1].status = "completed"
-            }
 
-            if (instructions[asmIdx]) {
-                instructions[asmIdx].status = "current"
-            }
+            instructions.forEach((ins, idx) => {
+                if (ins.status == "current") {
+                    ins.status = "completed"
+                    ins.sections = JSON.parse(JSON.stringify(sections))
+                }
+            })
+
+            if (instructions[asmIdx]) instructions[asmIdx].status = "current"
+
             return instructions
         })
 
-        this.currentAsmInstruction.update(n => n + 1)
+        this.currentAsmInstruction.set(currentAsm)
+
+
     }
 
     run() {
@@ -264,8 +327,12 @@ export class TuringMachine {
     }
 
     end() {
-        this.updateAssemblyInstructions()
+        this.update_assembly_instructions()
         this.status.set('paused')
+
+        // set output to value of A
+        this.update_sections()
+        this.output.set(get(this.sections).find(section => section.name == "A")?.value || "?")
     }
 
     pause() {
@@ -273,7 +340,7 @@ export class TuringMachine {
         this.status.set('paused')
     }
 
-    setSpeed(speed: number) {
+    set_speed(speed: number) {
         let status = get(this.status)
         this.speed.set(speed)
         if (status == 'running') {
@@ -290,8 +357,10 @@ export class TuringMachine {
         this.speed.set(10)
         this.state.set('START')
         this.steps.set(0)
+        this.output.set("?")
         this.error.set("")
         this.originalProgram.set("")
+        this.history = []
         clearInterval(this.interval)
         this.assemblyInstructions.set([])
         this.currentAsmInstruction.set(0)

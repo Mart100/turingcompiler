@@ -1,9 +1,13 @@
 mod ADD;
 mod ISZERO;
+mod JNZ;
 mod LOAD;
 mod MUL;
+mod NOT;
+mod SET;
 mod STORE;
 mod SUB;
+mod SUB_SAFE;
 mod helpers;
 
 use crate::a5code_generator::AssemblyInstruction;
@@ -20,7 +24,10 @@ pub mod prelude {
 
 use prelude::*;
 
-use self::{MUL::mul_instructions, SUB::sub_instructions};
+use self::{
+    JNZ::jnz_instruction, MUL::mul_instructions, NOT::not_instructions, SET::set_instruction,
+    SUB::sub_instructions, SUB_SAFE::sub_safe_instructions,
+};
 
 // Transform Assembly Instructions into Turing Machine Tape and Instructions.
 // The Turing Machine Instructions are in the following format:
@@ -68,22 +75,23 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
             // Define a label
             AssemblyInstruction::LABEL { label } => {
                 instructions.extend(header);
-                instructions.push(format!("LABEL_{label} 5 5 S END_{instruction_counter}"));
-                instruction_counter += 1;
+                instructions.push(format!(
+                    "LABEL_{label} 5 5 S {}END",
+                    instruction_counter - 1
+                ));
             }
 
             // Jump to a label if the value in A is not zero
             AssemblyInstruction::JNZ { label } => {
                 instructions.extend(header);
                 instructions.push(end_to_next_start(instruction_counter));
-                instructions.push(format!("{instruction_counter}START 5 5 S LABEL_{label}"));
+                instructions.extend(jnz_instruction(&instruction_counter, label));
                 instruction_counter += 1;
             }
 
-            // Store a value in the tape storage
+            // Store a value in the tape storage,
             AssemblyInstruction::SAVE { destination, value } => {
                 let value_binary = format!("{:08b}", value);
-
                 let mut vec = value_binary
                     .split("")
                     .map(|s| s.to_string())
@@ -96,6 +104,29 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
                 let mut new_tape_storage = vec.clone();
                 new_tape_storage.extend(tape_storage);
                 tape_storage = new_tape_storage;
+            }
+
+            // Set a value in the tape storage to a specific value
+            AssemblyInstruction::SET { destination, value } => {
+                let storage_address = destination.replace("S", "").parse::<u32>().unwrap();
+
+                let value_binary = format!("{:08b}", value);
+                let bool_vec = value_binary
+                    .chars()
+                    .map(|c| c == '1')
+                    .collect::<Vec<bool>>();
+
+                let bool_array: [bool; 8] = bool_vec.try_into().unwrap();
+
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
+                instructions.extend(set_instruction(
+                    &instruction_counter,
+                    storage_address,
+                    bool_array,
+                ));
+
+                instruction_counter += 1;
             }
 
             // Load a value from the tape storage into the working area
@@ -126,11 +157,29 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
                 instruction_counter += 1;
             }
 
-            // Subtract the value in B from the value in A
+            // Subtract the value in B from the value in A, overflow normally
             AssemblyInstruction::SUB => {
                 instructions.extend(header);
                 instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(sub_instructions(&instruction_counter));
+
+                instruction_counter += 1;
+            }
+
+            // Subtract the value in B from the value in A, if the result is negative, put 0 in A
+            AssemblyInstruction::SUB_SAFE => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
+                instructions.extend(sub_safe_instructions(&instruction_counter));
+
+                instruction_counter += 1;
+            }
+
+            // Flip the last bit in A
+            AssemblyInstruction::NOT => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
+                instructions.extend(not_instructions(&instruction_counter));
 
                 instruction_counter += 1;
             }
@@ -187,7 +236,7 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
 }
 
 fn get_assembly_instruction_header(instruction: &str) -> Vec<String> {
-    format!("\n#\n### {}\n#\n", instruction)
+    format!("\n#\n#asm {}\n#\n", instruction)
         .split("\n")
         .map(|s| s.to_string())
         .collect()
@@ -245,6 +294,7 @@ fn format_instructions(instructions: String, instruction_counter: u32) -> Vec<St
     string = new_string;
 
     string = string
+        .replace("&!", "") // When a state is prefixed with !, it should not add the instruction counter
         .replace("&", &instruction_counter.to_string())
         .replace("StartA", &symtou8(TapeSymbols::StartA).to_string())
         .replace("ABsep", &symtou8(TapeSymbols::ABseperator).to_string())

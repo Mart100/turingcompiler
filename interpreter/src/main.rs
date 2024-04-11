@@ -124,7 +124,7 @@ impl TuringMachine {
             return;
         }
 
-        self.print_current_step();
+        //self.print_current_step();
 
         let instruction = self
             .instructions

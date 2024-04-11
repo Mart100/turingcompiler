@@ -1,9 +1,12 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { interpreter, type TapeSection } from "../utils/Interpreter";
 
     let head = 0;
     let tape: number[] = [];
     let sections: TapeSection[] = [];
+
+    let tapeElement: HTMLElement | null = null;
 
     interpreter.head.subscribe((value) => {
         head = value;
@@ -35,9 +38,13 @@
             });
         }
     });
+
+    onMount(() => {
+        if (tapeElement) tapeElement.scrollLeft = tapeElement.scrollWidth;
+    });
 </script>
 
-<div class="tape">
+<div class="tape" bind:this={tapeElement}>
     <div class="sections">
         {#each sections as section, index (index)}
             <div

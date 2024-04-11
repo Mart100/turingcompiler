@@ -24,7 +24,7 @@ fn main() {
     fs::write("compiler_steps/step1_tokens.txt", &tokens_string).unwrap();
 
     let ast = parser(tokens);
-    let ast_json = serde_json::to_string(&ast).unwrap();
+    let ast_json = serde_json::to_string_pretty(&ast).unwrap();
     fs::write("compiler_steps/step2_ast.json", format!("{}", &ast_json)).unwrap();
 
     let tac = tac_generator(&ast);
@@ -48,7 +48,7 @@ fn main() {
 
     // embed original program into turing code for debugging
     turing_code.insert(0, "\n# Original program".to_string());
-    turing_code.insert(1, ("\n".to_string() + &code).replace("\n", "\n#p "));
+    turing_code.insert(1, ("\n".to_string() + &code).replace("\n", "\n#program "));
 
     let turing_contents = format!("{}\n{}", start_tape.join(" "), turing_code.join("\n"));
     fs::write("compiler_steps/step6_turingcode.txt", &turing_contents).unwrap();

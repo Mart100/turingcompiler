@@ -1,1 +1,96 @@
-[{"Declaration":{"var_name":"a","value":{"BinaryOperation":{"operator":"+","left":{"BinaryOperation":{"operator":"*","left":{"BinaryOperation":{"operator":"-","left":{"Constant":{"value":"22"}},"right":{"Constant":{"value":"8"}}}},"right":{"Constant":{"value":"4"}}}},"right":{"Constant":{"value":"5"}}}}}},{"Declaration":{"var_name":"b","value":{"BinaryOperation":{"operator":"==","left":{"Variable":{"name":"a"}},"right":{"Constant":{"value":"61"}}}}}},{"Declaration":{"var_name":"c","value":{"Constant":{"value":"0"}}}},{"Conditional":{"condition":{"Variable":{"name":"b"}},"then_branch":{"Assignment":{"var_name":"c","value":{"BinaryOperation":{"operator":"+","left":{"Variable":{"name":"a"}},"right":{"Constant":{"value":"39"}}}}}},"else_branch":{"Assignment":{"var_name":"c","value":{"Constant":{"value":"0"}}}}}},{"Declaration":{"var_name":"d","value":{"BinaryOperation":{"operator":"+","left":{"Variable":{"name":"c"}},"right":{"Variable":{"name":"a"}}}}}}]
+{
+  "Body": [
+    {
+      "Declaration": {
+        "var_name": "a",
+        "value": {
+          "Constant": {
+            "value": "4"
+          }
+        }
+      }
+    },
+    {
+      "Declaration": {
+        "var_name": "b",
+        "value": {
+          "Constant": {
+            "value": "2"
+          }
+        }
+      }
+    },
+    {
+      "While": {
+        "condition": {
+          "BinaryOperation": {
+            "operator": ">",
+            "left": {
+              "Variable": {
+                "name": "a"
+              }
+            },
+            "right": {
+              "Constant": {
+                "value": "0"
+              }
+            }
+          }
+        },
+        "body": {
+          "Body": [
+            {
+              "Assignment": {
+                "var_name": "a",
+                "value": {
+                  "BinaryOperation": {
+                    "operator": "-",
+                    "left": {
+                      "Variable": {
+                        "name": "a"
+                      }
+                    },
+                    "right": {
+                      "Constant": {
+                        "value": "1"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "Assignment": {
+                "var_name": "b",
+                "value": {
+                  "BinaryOperation": {
+                    "operator": "*",
+                    "left": {
+                      "Variable": {
+                        "name": "b"
+                      }
+                    },
+                    "right": {
+                      "Constant": {
+                        "value": "2"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "Return": {
+        "value": {
+          "Variable": {
+            "name": "b"
+          }
+        }
+      }
+    }
+  ]
+}

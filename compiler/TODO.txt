@@ -1,0 +1,8 @@
+- When optimizing the TAC, put variables in the order of most used to least used.
+Because the first variables takes the least amount of time to access.
+- Reuse temporary variables that are no longer needed.
+
+- Add syntax errors.
+
+- make multiple statements inside if/else body possible
+- Add While loops

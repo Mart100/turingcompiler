@@ -16,13 +16,20 @@
     interpreter.sections.subscribe((value) => {
         sections = value;
     });
+
+    const breakpointClick = (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+        const brIdx = target.id.split("-")[1];
+        interpreter.set_breakpoint(Number(brIdx));
+    };
 </script>
 
 <div class="assembly">
     {#if asmInstructions.length > 0 && asmInstructions[0].sections}
-        <table class="assembly-instructions">
+        <table>
             <thead>
                 <tr>
+                    <th>Br</th>
                     <th>Instruction</th>
                     {#each sections as section, index (index)}
                         <th>{section.name}</th>
@@ -31,20 +38,29 @@
             </thead>
             <tbody>
                 {#each asmInstructions as instruction, index (index)}
-                    <tr
-                        class="instruction-item"
-                        style="background-color: {instruction.status ==
-                        'current'
-                            ? 'red'
-                            : instruction.status == 'completed'
-                              ? 'darkolivegreen'
-                              : 'transparent'}"
-                    >
-                        <td class="instruction">{instruction.instruction}</td>
-                        {#if instruction.sections}
+                    <tr class="instruction-item">
+                        <td
+                            class="breakpoint"
+                            class:active={instruction.breakpoint}
+                            id="breakpoint-{index}"
+                            on:click={breakpointClick}
+                        ></td>
+                        <td
+                            class="instruction"
+                            style="background-color: {instruction.status ==
+                            'current'
+                                ? 'red'
+                                : instruction.status == 'completed'
+                                  ? 'darkolivegreen'
+                                  : 'transparent'}"
+                            >{instruction.instruction}</td
+                        >
+                        {#if instruction.sections && instruction.sections.length > 0}
                             {#each instruction.sections as section, index (index)}
-                                <td>{section.value}</td>
+                                <td class="section">{section.value}</td>
                             {/each}
+                        {:else}
+                            <td>-</td>
                         {/if}
                     </tr>
                 {/each}
@@ -57,19 +73,49 @@
     .assembly {
         text-align: left;
         overflow-y: auto;
+        display: flex;
+        overflow-x: auto;
+        // height: min-content;
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: black;
+            z-index: 100;
+        }
 
         .instruction-item {
             transition: background-color 0.25s;
+            white-space: nowrap;
 
-            .instruction {
-                padding-right: 2em;
+            .breakpoint {
+                &:hover::after {
+                    content: "";
+                    display: inline-block;
+                    width: 10px;
+                    height: 10px;
+                    background-color: lightcoral;
+                    border-radius: 50%;
+                }
+                &.active::after {
+                    content: "";
+                    display: inline-block;
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    background-color: red;
+                }
+            }
+
+            td:nth-child(2n + 3) {
+                background-color: rgb(60, 60, 60);
             }
         }
     }
 
-    :global(.sections) {
-        margin-left: 2em;
-        background-color: darkolivegreen;
-        white-space: nowrap;
+    .scrollable-columns {
+        overflow-x: auto;
+        flex-grow: 1;
+        height: min-content;
     }
 </style>

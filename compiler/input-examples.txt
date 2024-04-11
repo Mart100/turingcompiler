@@ -15,3 +15,19 @@ if b {
 } else {
     c = 0;
 };
+
+# GT and LT
+let a = 2 > 4;
+let b = 4 > 2;
+let c = 2 < 4;
+let d = 4 < 2;
+
+# While loop
+let a = 4;
+let b = 2;
+while (a > 0) {
+    a = a - 1;
+    b = b * 2;
+};
+return b;
+
