@@ -45,7 +45,18 @@ pub enum AstNode {
         condition: Box<AstNode>,
         body: Box<AstNode>,
     },
+    Function {
+        name: String,
+        args: Box<AstNode>,
+        body: Box<AstNode>,
+    },
+    FunctionCall {
+        name: String,
+        args: Box<AstNode>,
+    },
     Body(Vec<AstNode>),
+    Arguments(Vec<AstNode>),
+    CallArguments(Vec<AstNode>),
 }
 
 pub fn parser(tokens: Vec<Token>) -> AstNode {
@@ -136,6 +147,19 @@ where
                     body: Box::new(body),
                 }
             }
+            "fn" => {
+                iter.next(); // consume "fn"
+                let var_name = iter.next().unwrap().value.clone(); // get function name
+                assert_eq!(iter.next().unwrap().value, "("); // consume opening parenthesis
+                let args = parse_arguments(iter); // parse the arguments
+
+                let body = parse_body(iter); // parse the body
+                AstNode::Function {
+                    name: var_name,
+                    args: Box::new(args),
+                    body: Box::new(body),
+                }
+            }
             "return" => {
                 iter.next(); // consume "return"
                 let value = parse_expression(iter); // parse the return value
@@ -152,7 +176,15 @@ where
                         value: Box::new(right),
                         var_name,
                     }
+                } else if iter.peek().unwrap().value == "(" {
+                    iter.next(); // consume "("
+                    let args = parse_call_arguments(iter); // parse the arguments
+                    AstNode::FunctionCall {
+                        name: var_name,
+                        args: Box::new(args),
+                    }
                 } else {
+                    println!("Unexpected token: {:?}", iter.peek());
                     parse_expression(iter)
                 }
             }
@@ -174,13 +206,68 @@ where
     node
 }
 
+fn parse_arguments<I>(iter: &mut Peekable<I>) -> AstNode
+where
+    I: Iterator<Item = Token>,
+{
+    let mut args = Vec::new();
+
+    while let Some(token) = iter.peek() {
+        match token.value.as_str() {
+            ")" => {
+                iter.next(); // consume closing parenthesis
+                break;
+            }
+            "," => {
+                iter.next(); // consume comma
+            }
+            _ => {
+                args.push(iter.next().unwrap().value.clone());
+            }
+        }
+    }
+
+    AstNode::Arguments(
+        args.into_iter()
+            .map(|arg| AstNode::Variable { name: arg })
+            .collect(),
+    )
+}
+
+fn parse_call_arguments<I>(iter: &mut Peekable<I>) -> AstNode
+where
+    I: Iterator<Item = Token>,
+{
+    let mut args = Vec::new();
+
+    while let Some(token) = iter.peek() {
+        match token.value.as_str() {
+            ")" => {
+                iter.next(); // consume closing parenthesis
+                break;
+            }
+            "," => {
+                iter.next(); // consume comma
+            }
+            _ => {
+                args.push(parse_expression(iter));
+            }
+        }
+    }
+
+    AstNode::CallArguments(args)
+}
+
 fn parse_expression<I>(iter: &mut Peekable<I>) -> AstNode
 where
     I: Iterator<Item = Token>,
 {
     let mut node = parse_term(iter);
 
+    println!("parse_expression: {:?}", node);
+
     while let Some(token) = iter.peek() {
+        println!("parse_expression token: {:?}", token);
         match token.value.as_str() {
             "+" | "-" | "==" | ">" | "<" => {
                 let op = iter.next().unwrap().value.clone();
@@ -228,11 +315,6 @@ where
 {
     if let Some(token) = iter.next() {
         match token.value.as_str() {
-            "(" => {
-                let node = parse_expression(iter);
-                assert_eq!(iter.next().unwrap().value, ")");
-                node
-            }
             num if num.parse::<u8>().is_ok() => AstNode::Constant {
                 value: num.to_string(),
             },

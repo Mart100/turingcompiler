@@ -107,7 +107,7 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
             TACInstruction::Label { label } => {
                 code.push(AssemblyInstruction::LABEL { label });
             }
-            TACInstruction::Output { mut value } => {
+            TACInstruction::Return { mut value } => {
                 tvar_to_svar(&mut value);
                 code.push(AssemblyInstruction::LOAD {
                     destination: "A".to_string(),

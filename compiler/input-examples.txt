@@ -31,3 +31,12 @@ while (a > 0) {
 };
 return b;
 
+# Loopdy loop
+let a = 255;
+while (a > 0) {
+    a = a - 1;
+    let b = 0;
+    while (b > 0) {
+        b = b - 1;
+    };
+};

@@ -8,6 +8,7 @@ pub enum TokenType {
     Semicolon,
     ComparisonOperator,
     Bracket,
+    Comma,
 }
 
 #[derive(Debug, Clone)]
@@ -20,6 +21,7 @@ pub fn lexer(mut code: String) -> Vec<Token> {
     // preprocess the code to add spaces around the parenthesis
     code = code.replace("(", " ( ").replace(")", " ) ");
     code = code.replace(";", " ; ");
+    code = code.replace(",", " , ");
 
     // For simplicity, consider each line as a single statement and split it by spaces.
     code.lines()
@@ -36,6 +38,14 @@ pub fn lexer(mut code: String) -> Vec<Token> {
                     },
                     "while" => Token {
                         type_: TokenType::Keyword,
+                        value: word.to_string(),
+                    },
+                    "fn" => Token {
+                        type_: TokenType::Keyword,
+                        value: word.to_string(),
+                    },
+                    "," => Token {
+                        type_: TokenType::Comma,
                         value: word.to_string(),
                     },
                     "if" | "else" => Token {

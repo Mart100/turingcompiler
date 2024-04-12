@@ -95,7 +95,7 @@ fn reset_vars(tac: &mut Vec<TACInstruction>) {
                 update_temp_var(&mut temp_var_map, &mut var_counter, var_name);
                 update_temp_var(&mut temp_var_map, &mut var_counter, value);
             }
-            TACInstruction::Output { value } => {
+            TACInstruction::Return { value } => {
                 update_temp_var(&mut temp_var_map, &mut var_counter, value);
             }
             TACInstruction::BinaryOperation {

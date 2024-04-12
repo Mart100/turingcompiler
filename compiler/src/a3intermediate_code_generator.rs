@@ -36,7 +36,7 @@ pub enum TACInstruction {
         condition: String,
         label: String,
     },
-    Output {
+    Return {
         value: String,
     },
 }
@@ -67,8 +67,8 @@ impl TACInstruction {
             TACInstruction::IfNotGoto { condition, label } => {
                 format!("if !{} goto {}", condition, label)
             }
-            TACInstruction::Output { value } => {
-                format!("output {}", value)
+            TACInstruction::Return { value } => {
+                format!("return {}", value)
             }
         }
     }
@@ -145,7 +145,7 @@ fn generate_tac(
         }
         AstNode::Return { value } => {
             let value = generate_tac(&*value, instructions, temp_counter);
-            instructions.push(TACInstruction::Output { value });
+            instructions.push(TACInstruction::Return { value });
             return "".to_string();
         }
         AstNode::While { condition, body } => {
@@ -174,6 +174,33 @@ fn generate_tac(
             instructions.push(TACInstruction::Label {
                 label: end_label.clone(),
             });
+
+            return "".to_string();
+        }
+        AstNode::Function { name, args, body } => {
+            let mut arg_tac = Vec::new();
+            let node = &**args;
+
+            if let AstNode::Arguments(arg_nodes) = node {
+                for arg in arg_nodes {
+                    arg_tac.push(generate_tac(arg, instructions, temp_counter));
+                }
+            } else {
+                panic!("Expected AstNode::Arguments");
+            }
+
+            instructions.push(TACInstruction::Label {
+                label: name.clone(),
+            });
+
+            for (i, arg) in arg_tac.iter().enumerate() {
+                instructions.push(TACInstruction::Assignment {
+                    var_name: format!("arg{}", i),
+                    value: arg.clone(),
+                });
+            }
+
+            generate_tac(&*body, instructions, temp_counter);
 
             return "".to_string();
         }

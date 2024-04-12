@@ -1,78 +1,37 @@
 {
   "Body": [
     {
-      "Declaration": {
-        "var_name": "a",
-        "value": {
-          "Constant": {
-            "value": "4"
-          }
-        }
-      }
-    },
-    {
-      "Declaration": {
-        "var_name": "b",
-        "value": {
-          "Constant": {
-            "value": "2"
-          }
-        }
-      }
-    },
-    {
-      "While": {
-        "condition": {
-          "BinaryOperation": {
-            "operator": ">",
-            "left": {
+      "Function": {
+        "name": "add",
+        "args": {
+          "Arguments": [
+            {
               "Variable": {
-                "name": "a"
+                "name": "b"
               }
             },
-            "right": {
-              "Constant": {
-                "value": "0"
+            {
+              "Variable": {
+                "name": "c"
               }
             }
-          }
+          ]
         },
         "body": {
           "Body": [
             {
-              "Assignment": {
-                "var_name": "a",
+              "Return": {
                 "value": {
                   "BinaryOperation": {
-                    "operator": "-",
-                    "left": {
-                      "Variable": {
-                        "name": "a"
-                      }
-                    },
-                    "right": {
-                      "Constant": {
-                        "value": "1"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "Assignment": {
-                "var_name": "b",
-                "value": {
-                  "BinaryOperation": {
-                    "operator": "*",
+                    "operator": "+",
                     "left": {
                       "Variable": {
                         "name": "b"
                       }
                     },
                     "right": {
-                      "Constant": {
-                        "value": "2"
+                      "Variable": {
+                        "name": "c"
                       }
                     }
                   }
@@ -84,11 +43,21 @@
       }
     },
     {
-      "Return": {
-        "value": {
-          "Variable": {
-            "name": "b"
-          }
+      "FunctionCall": {
+        "name": "add",
+        "args": {
+          "CallArguments": [
+            {
+              "Constant": {
+                "value": "1"
+              }
+            },
+            {
+              "Constant": {
+                "value": "2"
+              }
+            }
+          ]
         }
       }
     }

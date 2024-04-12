@@ -1,17 +1,5 @@
-t1 = 4
-a = t1
-t2 = 2
-b = t2
-L3:
-t5 = 0
-t6 = a > t5
-if !t6 goto L4
-t7 = 1
-t8 = a - t7
-a = t8
-t9 = 2
-t10 = b * t9
-b = t10
-goto L3
-L4:
-output b
+add:
+arg0 = b
+arg1 = c
+t1 = b + c
+return t1
