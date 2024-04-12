@@ -1,38 +1,38 @@
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, fs, time::Instant};
 
-#[derive(Debug)]
-enum Direction {
+#[derive(Debug, Default, Clone)]
+enum Action {
+    #[default]
+    Stay,
     Left,
     Right,
 }
 
-#[derive(Debug)]
-enum Action {
-    Stay,
-    Move(Direction),
-}
-
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 struct Instruction {
-    write_symbol: u8,
+    write_symbol: u32,
     action: Action,
-    next_state: String,
+    next_state: u32,
 }
 
 #[derive(Debug)]
 struct TuringMachine {
-    current_state: String,
+    current_state: u32,
     current_position: usize,
-    tape: Vec<u8>,
-    instructions: HashMap<(String, u8), Instruction>,
+    tape: Vec<u32>,
+    instructions: Vec<Instruction>,
     step: u64,
+    end_state: u32,
 }
 
 impl TuringMachine {
     fn from_file(filename: &str) -> Self {
         let contents = fs::read_to_string(filename).unwrap();
         let mut lines = contents.lines().peekable();
-        let mut instructions = HashMap::new();
+        let mut instructions = Vec::new();
+
+        let mut state_mapping = HashMap::new();
+        let mut state_counter: u32 = 0;
 
         let tape_start = lines
             .peek()
@@ -47,7 +47,7 @@ impl TuringMachine {
             .next()
             .unwrap()
             .split_whitespace()
-            .map(|s| s.replace("!", "").parse::<u8>().unwrap())
+            .map(|s| s.replace("!", "").parse::<u32>().unwrap())
             .collect();
 
         for line in lines {
@@ -59,9 +59,26 @@ impl TuringMachine {
             }
             let current_state = parts[0].to_string();
 
+            let current_state_num =
+                *state_mapping
+                    .entry(current_state.clone())
+                    .or_insert_with(|| {
+                        let current = state_counter;
+                        state_counter += 1;
+                        current
+                    });
+
+            let next_state = parts[4].to_string();
+
+            let next_state_num = *state_mapping.entry(next_state.clone()).or_insert_with(|| {
+                let current = state_counter;
+                state_counter += 1;
+                current
+            });
+
             let read_symbol;
-            if parts[1].parse::<u8>().is_ok() {
-                read_symbol = parts[1].parse::<u8>().unwrap();
+            if parts[1].parse::<u32>().is_ok() {
+                read_symbol = parts[1].parse::<u32>().unwrap();
             } else if parts[1] == "_" {
                 read_symbol = 255;
             } else {
@@ -70,8 +87,8 @@ impl TuringMachine {
             }
 
             let write_symbol;
-            if parts[2].parse::<u8>().is_ok() {
-                write_symbol = parts[2].parse::<u8>().unwrap();
+            if parts[2].parse::<u32>().is_ok() {
+                write_symbol = parts[2].parse::<u32>().unwrap();
             } else if parts[2] == "_" {
                 write_symbol = 255;
             } else {
@@ -81,27 +98,33 @@ impl TuringMachine {
 
             let action = match parts[3] {
                 "S" => Action::Stay,
-                "L" => Action::Move(Direction::Left),
-                "R" => Action::Move(Direction::Right),
+                "L" => Action::Left,
+                "R" => Action::Right,
                 _ => panic!("Invalid action"),
             };
-            let next_state = parts[4].to_string();
 
             let instruction = Instruction {
                 write_symbol,
                 action,
-                next_state,
+                next_state: next_state_num,
             };
 
-            instructions.insert((current_state, read_symbol), instruction);
+            instructions.resize(
+                ((state_counter << 8) | 255 + 1) as usize,
+                Default::default(),
+            );
+
+            //instructions.insert((current_state_num, read_symbol), instruction);
+            instructions[((current_state_num << 8) | read_symbol) as usize] = instruction;
         }
 
         Self {
-            current_state: "START".to_string(),
+            current_state: 0,
             current_position: tape_start,
             tape: initial_tape,
             instructions,
             step: 0,
+            end_state: state_counter,
         }
     }
 
@@ -120,45 +143,48 @@ impl TuringMachine {
     }
 
     fn step(&mut self) {
-        if self.current_state == "END" {
-            return;
-        }
-
         //self.print_current_step();
 
-        let instruction = self
-            .instructions
-            .get(&(self.current_state.clone(), self.tape[self.current_position]))
-            .unwrap();
+        // let instruction = self
+        //     .instructions
+        //     .get(&(self.current_state, self.tape[self.current_position]))
+        //     .unwrap();
+
+        let instruction = &self.instructions
+            [((self.current_state << 8) | self.tape[self.current_position]) as usize];
+
         self.tape[self.current_position] = instruction.write_symbol;
         match instruction.action {
             Action::Stay => (),
-            Action::Move(Direction::Left) => {
+            Action::Left => {
                 if self.current_position == 0 {
                     self.tape.insert(0, 255);
                 } else {
                     self.current_position -= 1;
                 }
             }
-            Action::Move(Direction::Right) => {
+            Action::Right => {
                 self.current_position += 1;
                 if self.current_position == self.tape.len() {
                     self.tape.push(255);
                 }
             }
         }
-        self.current_state = instruction.next_state.clone();
+        self.current_state = instruction.next_state;
         self.step += 1;
     }
 
     fn run(&mut self) {
+        let start = Instant::now();
         loop {
-            if self.current_state == "END" {
+            if self.current_state == self.end_state - 1 {
                 println!("End state reached. Halting.");
                 break;
             }
             self.step();
         }
+        let duration = start.elapsed();
+        println!("Program took {:?}", duration);
     }
 }
 
