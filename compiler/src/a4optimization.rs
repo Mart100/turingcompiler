@@ -11,7 +11,7 @@ pub fn optimize_tac(mut tac: Vec<TACInstruction>) -> Vec<TACInstruction> {
     for instruction in &tac {
         match instruction {
             TACInstruction::Assignment { var_name, value } => {
-                if !is_temporary(&var_name) && value.parse::<u8>().is_err() {
+                if !is_temporary(&var_name) && value.parse::<u8>().is_err() && value != "ret" {
                     variables.insert(value.clone(), var_name.clone());
                 }
             }
@@ -64,7 +64,7 @@ pub fn optimize_tac(mut tac: Vec<TACInstruction>) -> Vec<TACInstruction> {
         }
     }
 
-    reset_vars(&mut optimized_tac);
+    // reset_vars(&mut optimized_tac);
 
     optimized_tac
 }
@@ -75,6 +75,8 @@ fn reset_vars(tac: &mut Vec<TACInstruction>) {
     let mut temp_var_map = std::collections::HashMap::new();
     let mut label_counter = 1;
     let mut temp_label_map = std::collections::HashMap::new();
+    let mut function_counter = 1;
+    let mut temp_function_map = std::collections::HashMap::new();
     for instruction in tac {
         match instruction {
             TACInstruction::IfGoto { condition, label } => {
@@ -98,6 +100,15 @@ fn reset_vars(tac: &mut Vec<TACInstruction>) {
             TACInstruction::Return { value } => {
                 update_temp_var(&mut temp_var_map, &mut var_counter, value);
             }
+            TACInstruction::FunctionCall { name, args } => {
+                update_function(&mut temp_function_map, &mut function_counter, name);
+                for arg in args {
+                    update_temp_var(&mut temp_var_map, &mut var_counter, arg);
+                }
+            }
+            TACInstruction::Function { name } => {
+                update_function(&mut temp_function_map, &mut function_counter, name);
+            }
             TACInstruction::BinaryOperation {
                 result,
                 left,
@@ -111,6 +122,15 @@ fn reset_vars(tac: &mut Vec<TACInstruction>) {
             _ => {}
         }
     }
+}
+
+fn update_function(temp_map: &mut HashMap<String, String>, counter: &mut usize, func: &mut String) {
+    let entry = temp_map.entry(func.clone()).or_insert_with(|| {
+        let new_name = format!("F{}", *counter);
+        *counter += 1;
+        new_name
+    });
+    *func = entry.clone();
 }
 
 fn update_label(temp_map: &mut HashMap<String, String>, counter: &mut usize, label: &mut String) {

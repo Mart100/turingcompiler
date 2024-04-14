@@ -6,3 +6,6 @@ Because the first variables takes the least amount of time to access.
 
 - make multiple statements inside if/else body possible
 - Add While loops
+
+- BENCHMARKS, see how many steps it takes to run snippets
+And try to improve the optimization

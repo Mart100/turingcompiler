@@ -1,11 +1,17 @@
 I am making a Compiler that compiles a simple programming language to Turing-Machine instructions.
 The Turing-Machine instructions are in the following format: [state, read, write, move, new_state]
-The tape consists of a list of characters, and the head is at the first character of the list.
+The tape consists of a list of characters.
+My current design of the tape is as follows:
+In the very middle, where the head starts, there is a Middle character.
+To the left of the Middle character, there is a storage area, an infinite amount of 8 binary digits, seperated by a Storage Seperator character.
+To the right of the Middle character, there is a working area, with 3 sections of 8 binary digits, seperated by an A, B and C seperator character.
+The storage area is ment to store the value of variables, while the working area is ment to perform operations.
 
 To compile, I am first using a lexer to convert the source code to a list of tokens, 
 and then using a parser to convert the list of tokens to a AST (Abstract Syntax Tree).
-The AST is then converted to a TAC (Three Address Code) representation, 
-And the TAC is converted to a simple assembly-like language, with an operation, a source, and a destination.
+The AST is then converted to a TAC (Three Address Code) representation,
+The TAC is then optimized.
+Then TAC is converted to a simple assembly-like language, with an operation, a source, and a destination.
 And finally, the assembly-like language is converted to Turing-Machine instructions.
 
 You will help me build this Compiler, by helping me provide code in rust, and explaining how it works.

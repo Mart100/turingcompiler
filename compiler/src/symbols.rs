@@ -4,7 +4,7 @@ pub enum TapeSymbols {
     Zero,             // binary 0
     One,              // binary 1
     StartA,           // Start of the number A in the working area
-    ABseperator,      // Seperator between numbers A and B in the working area
+    EndA,             // Seperator between numbers A and B in the working area
     EndB,             // End of the number B in the working area
     EndC,             // End of the number C in the working area
     Middle,           // Middle of the tape, between the storage area and the working area
@@ -20,7 +20,7 @@ pub fn symtou8(symbol: TapeSymbols) -> u8 {
         TapeSymbols::Zero => 0,
         TapeSymbols::One => 1,
         TapeSymbols::StartA => 2,
-        TapeSymbols::ABseperator => 3,
+        TapeSymbols::EndA => 3,
         TapeSymbols::EndB => 4,
         TapeSymbols::Middle => 5,
         TapeSymbols::StorageSeperator => 6,

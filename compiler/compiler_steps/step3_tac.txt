@@ -3,3 +3,11 @@ arg0 = b
 arg1 = c
 t1 = b + c
 return t1
+main:
+t2 = 1
+t3 = 2
+arg0 = t2
+arg1 = t3
+call add
+a = ret
+return a

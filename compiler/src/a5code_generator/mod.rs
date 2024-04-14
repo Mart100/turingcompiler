@@ -1,14 +1,22 @@
+pub mod helpers;
+mod variables;
+
+use std::collections::HashMap;
+
+use self::{helpers::helpers::*, variables::Variables};
 use crate::a3intermediate_code_generator::TACInstruction;
 
 #[derive(Debug, Clone)]
 pub enum AssemblyInstruction {
     SAVE { destination: String, value: u8 },
     SET { destination: String, value: u8 },
-    LOAD { destination: String, source: String },
-    STORE { destination: String, source: String },
+    LOAD { destination: String, source: String }, // Storage to working area
+    STORE { destination: String, source: String }, // Working area to storage
+    MOVE { destination: String, source: String }, // Storage to storage
     JMP { label: String },
     JNZ { label: String },
     LABEL { label: String },
+    FN { name: String },
     ADD,
     SUB,
     SUB_SAFE,
@@ -16,6 +24,7 @@ pub enum AssemblyInstruction {
     NOT,
     DIV,
     ISZERO,
+    ENDFN,
 }
 
 impl AssemblyInstruction {
@@ -35,9 +44,16 @@ impl AssemblyInstruction {
             AssemblyInstruction::SET { destination, value } => {
                 format!("SET {} {}", destination, value)
             }
+            AssemblyInstruction::MOVE {
+                destination,
+                source,
+            } => {
+                format!("MOVE {} {}", destination, source)
+            }
             AssemblyInstruction::JMP { label } => format!("JMP {}", label),
             AssemblyInstruction::JNZ { label } => format!("JNZ {}", label),
             AssemblyInstruction::LABEL { label } => format!("{}:", label),
+            AssemblyInstruction::FN { name } => format!("{}:", name),
             AssemblyInstruction::ADD => "ADD".to_string(),
             AssemblyInstruction::SUB => "SUB".to_string(),
             AssemblyInstruction::SUB_SAFE => "SUB_SAFE".to_string(),
@@ -45,55 +61,49 @@ impl AssemblyInstruction {
             AssemblyInstruction::MUL => "MUL".to_string(),
             AssemblyInstruction::DIV => "DIV".to_string(),
             AssemblyInstruction::ISZERO => "ISZERO".to_string(),
+            AssemblyInstruction::ENDFN => "ENDFN".to_string(),
         }
     }
 }
 
-pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
-    let mut storage = Vec::new();
-    let mut initializations = Vec::new();
-    let mut savescode = Vec::new();
+pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i32) {
+    let mut variables = Variables::new();
     let mut code = Vec::new();
-    let mut temp_counter = 1;
+    let mut functions: HashMap<String, i32> = HashMap::new(); // <function_name, number_of_calls>
 
     for instruction in tac {
+        let mut latest_func: Option<String> = None;
+
         match instruction {
-            TACInstruction::Assignment {
-                mut var_name,
-                value,
-            } => {
-                tvar_to_svar(&mut var_name);
+            TACInstruction::Assignment { var_name, value } => {
                 println!("var_name: {}, {}", var_name, value);
-                if !initializations.contains(&var_name) {
-                    initializations.push(var_name.clone());
-                    savescode.push(AssemblyInstruction::SAVE {
-                        destination: var_name.clone(),
-                        value: value.parse().unwrap(),
-                    });
-                    storage.push(var_name);
-                } else {
+                if value.parse::<u8>().is_ok() {
                     code.push(AssemblyInstruction::SET {
                         destination: var_name.clone(),
                         value: value.parse().unwrap(),
                     });
+                    variables.set(var_name.clone());
+                } else {
+                    variables.set(var_name.clone());
+                    variables.set(value.clone());
+                    code.push(AssemblyInstruction::MOVE {
+                        destination: value.clone(),
+                        source: var_name.clone(),
+                    });
                 }
             }
-            TACInstruction::IfGoto {
-                mut condition,
-                label,
-            } => {
-                tvar_to_svar(&mut condition);
+            TACInstruction::IfGoto { condition, label } => {
+                variables.set(condition.clone());
+
                 code.push(AssemblyInstruction::LOAD {
                     destination: "A".to_string(),
                     source: condition.clone(),
                 });
                 code.push(AssemblyInstruction::JNZ { label });
             }
-            TACInstruction::IfNotGoto {
-                mut condition,
-                label,
-            } => {
-                tvar_to_svar(&mut condition);
+            TACInstruction::IfNotGoto { condition, label } => {
+                variables.set(condition.clone());
+
                 code.push(AssemblyInstruction::LOAD {
                     destination: "A".to_string(),
                     source: condition.clone(),
@@ -107,24 +117,49 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
             TACInstruction::Label { label } => {
                 code.push(AssemblyInstruction::LABEL { label });
             }
-            TACInstruction::Return { mut value } => {
-                tvar_to_svar(&mut value);
+            TACInstruction::Return { value } => {
+                variables.set(value.clone());
                 code.push(AssemblyInstruction::LOAD {
                     destination: "A".to_string(),
                     source: value.clone(),
                 });
+                code.push(AssemblyInstruction::ENDFN);
             }
-            TACInstruction::BinaryOperation {
-                mut result,
-                mut left,
-                operator,
-                mut right,
-            } => {
-                tvar_to_svar(&mut result);
-                tvar_to_svar(&mut left);
-                tvar_to_svar(&mut right);
+            TACInstruction::Function { name } => {
+                latest_func = Some(name.clone());
+                functions.insert(name.clone(), 0);
+                code.push(AssemblyInstruction::FN { name });
+            }
+            TACInstruction::FunctionCall { name, args } => {
+                let entry = functions.entry(name.clone()).or_insert(0);
 
+                code.push(AssemblyInstruction::SET {
+                    destination: format!("F_{}", name.clone()),
+                    value: entry.clone() as u8,
+                });
+
+                code.push(AssemblyInstruction::JMP {
+                    label: name.clone(),
+                });
+
+                code.push(AssemblyInstruction::LABEL {
+                    label: format!("L{name}_{entry}"),
+                });
+
+                *entry += 1;
+            }
+
+            TACInstruction::BinaryOperation {
+                result,
+                left,
+                operator,
+                right,
+            } => {
                 let operation = operator_char_to_string(&operator);
+
+                variables.set(result.clone());
+                variables.set(left.clone());
+                variables.set(right.clone());
 
                 match operation.as_str() {
                     "ADD" => {
@@ -242,56 +277,47 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> Vec<AssemblyInstruction> {
                     }
                     _ => {}
                 }
-
-                // if the result is not in the storage, initialize it to 0
-                if !storage.contains(&result.clone()) {
-                    savescode.push(AssemblyInstruction::SAVE {
-                        destination: result.clone(),
-                        value: 0,
-                    });
-                    storage.push(format!("S{}", result.clone()));
-                }
             }
             _ => panic!("Instruction {} not implemented", instruction.to_string()),
         }
     }
 
-    let finalcode: Vec<AssemblyInstruction> =
-        savescode.iter().chain(code.iter()).cloned().collect();
-
-    finalcode
-}
-
-pub fn assemblyvec_to_string(assembly: Vec<AssemblyInstruction>) -> String {
-    let mut result = String::new();
-
-    for instruction in assembly {
-        result.push_str(&format!("{}\n", instruction.to_string()));
+    // add functions to variables
+    for (name, frequency) in functions.clone() {
+        variables.add(format!("F_{name}"), frequency as u32);
     }
 
-    result
-}
+    println!("Functions: {:?}", functions.clone());
+    println!("Variables: {:?}", variables);
 
-fn operator_char_to_string(op: &str) -> String {
-    match op {
-        "+" => "ADD".to_string(),
-        "-" => "SUB".to_string(),
-        "*" => "MUL".to_string(),
-        "/" => "DIV".to_string(),
-        "=" => "MOV".to_string(),
-        "==" => "CMP".to_string(),
-        ">" => "GT".to_string(),
-        ">=" => "GE".to_string(),
-        "<" => "LT".to_string(),
-        "<=" => "LE".to_string(),
-        _ => panic!("Unsupported operator"),
-    }
-}
+    variables.calculate_addresses();
 
-fn tvar_to_svar(tvar: &mut String) {
-    if tvar.starts_with("t") {
-        *tvar = "S".to_string() + &tvar[1..];
-    } else {
-        *tvar = tvar.to_string();
+    // Assign Addresses to all variables
+    for instruction in code.iter_mut() {
+        match instruction {
+            AssemblyInstruction::LOAD { destination, .. }
+            | AssemblyInstruction::STORE { destination, .. }
+            | AssemblyInstruction::SET { destination, .. }
+            | AssemblyInstruction::SAVE { destination, .. }
+            | AssemblyInstruction::MOVE { destination, .. } => {
+                if let Some(var) = variables.get(destination) {
+                    *destination = var.get_address();
+                }
+            }
+
+            _ => {}
+        }
+        match instruction {
+            AssemblyInstruction::LOAD { source, .. }
+            | AssemblyInstruction::STORE { source, .. }
+            | AssemblyInstruction::MOVE { source, .. } => {
+                if let Some(var) = variables.get(source) {
+                    *source = var.get_address();
+                }
+            }
+            _ => {}
+        }
     }
+
+    (code, variables.count())
 }

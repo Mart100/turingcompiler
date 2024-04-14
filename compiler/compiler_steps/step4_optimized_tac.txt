@@ -1,3 +1,9 @@
-L1:
-t1 = t2 + t3
+add:
+t1 = arg0 + arg1
 return t1
+main:
+arg0 = 1
+arg1 = 2
+call add
+a = ret
+return a

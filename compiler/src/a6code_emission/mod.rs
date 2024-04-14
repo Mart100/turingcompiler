@@ -2,6 +2,7 @@ mod ADD;
 mod ISZERO;
 mod JNZ;
 mod LOAD;
+mod MOV;
 mod MUL;
 mod NOT;
 mod SET;
@@ -10,8 +11,6 @@ mod SUB;
 mod SUB_SAFE;
 mod helpers;
 
-use crate::a5code_generator::AssemblyInstruction;
-
 pub mod prelude {
     pub use super::helpers::*;
     pub use super::ADD::add_instructions;
@@ -19,6 +18,7 @@ pub mod prelude {
     pub use super::LOAD::load_instructions;
     pub use super::STORE::store_instructions;
     pub use super::*;
+    pub use crate::a5code_generator::AssemblyInstruction;
     pub use crate::symbols::{symtou8, TapeSymbols};
 }
 
@@ -35,28 +35,11 @@ use self::{
 // The Turing Machine Tape is a Vec of u8 numbers, and _ represents the blank symbol.
 
 // returns (tape, instructions)
-pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<String>) {
-    let mut tape_storage = Vec::<String>::new(); // This is the tape storage, which is used to save values.
-
-    let start_a = symtou8(TapeSymbols::StartA).to_string();
-    let ab_seperator = symtou8(TapeSymbols::ABseperator).to_string();
-    let end_b = symtou8(TapeSymbols::EndB).to_string();
-    let end_c = symtou8(TapeSymbols::EndC).to_string();
-
-    let tape_working_area = format!(
-        "{} 0 0 0 0 0 0 0 0 {} 0 0 0 0 0 0 0 0 {} 0 0 0 0 0 0 0 0 {}",
-        start_a, ab_seperator, end_b, end_c
-    )
-    .split_whitespace()
-    .map(|s| s.to_string())
-    .collect::<Vec<String>>();
-
+pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
     let mut instructions = Vec::new();
     instructions.push("\nSTART 5 5 S 0END".to_string());
 
     let mut instruction_counter = 1 as u32;
-
-    let storage_seperator = &symtou8(TapeSymbols::StorageSeperator).to_string();
 
     let end_to_next_start = |i: u32| format!("\n{}END 5 5 S {}START", i - 1, i);
 
@@ -81,29 +64,25 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
                 ));
             }
 
+            // Define a function label
+            AssemblyInstruction::FN { name } => {
+                instructions.extend(header);
+                instructions.push(format!("LABEL_{name} 5 5 S {}END", instruction_counter - 1));
+            }
+
+            // End of a function
+            AssemblyInstruction::ENDFN => {
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
+                instruction_counter += 1;
+            }
+
             // Jump to a label if the value in A is not zero
             AssemblyInstruction::JNZ { label } => {
                 instructions.extend(header);
                 instructions.push(end_to_next_start(instruction_counter));
                 instructions.extend(jnz_instruction(&instruction_counter, label));
                 instruction_counter += 1;
-            }
-
-            // Store a value in the tape storage,
-            AssemblyInstruction::SAVE { destination, value } => {
-                let value_binary = format!("{:08b}", value);
-                let mut vec = value_binary
-                    .split("")
-                    .map(|s| s.to_string())
-                    .collect::<Vec<String>>();
-                vec.push(storage_seperator.clone());
-
-                // trim spaces on strings in vec
-                vec = vec.iter().map(|s| s.trim().to_string()).collect();
-
-                let mut new_tape_storage = vec.clone();
-                new_tape_storage.extend(tape_storage);
-                tape_storage = new_tape_storage;
             }
 
             // Set a value in the tape storage to a specific value
@@ -224,15 +203,9 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> (Vec<String>, Vec<St
         }
     }
 
-    tape_storage.insert(0, storage_seperator.clone());
-
-    let mut tape = tape_storage.clone();
-    tape.push(format!("!{}", symtou8(TapeSymbols::Middle).to_string())); // Add center symbol
-    tape.extend(tape_working_area);
-
     instructions.push(format!("{}END 5 5 S END", instruction_counter - 1));
 
-    (tape, instructions)
+    instructions
 }
 
 fn get_assembly_instruction_header(instruction: &str) -> Vec<String> {
@@ -297,7 +270,7 @@ fn format_instructions(instructions: String, instruction_counter: u32) -> Vec<St
         .replace("&!", "") // When a state is prefixed with !, it should not add the instruction counter
         .replace("&", &instruction_counter.to_string())
         .replace("StartA", &symtou8(TapeSymbols::StartA).to_string())
-        .replace("ABsep", &symtou8(TapeSymbols::ABseperator).to_string())
+        .replace("ABsep", &symtou8(TapeSymbols::EndA).to_string())
         .replace("EndB", &symtou8(TapeSymbols::EndB).to_string())
         .replace("EndC", &symtou8(TapeSymbols::EndC).to_string())
         .replace("Middle", &symtou8(TapeSymbols::Middle).to_string())

@@ -43,18 +43,44 @@
       }
     },
     {
-      "FunctionCall": {
-        "name": "add",
+      "Function": {
+        "name": "main",
         "args": {
-          "CallArguments": [
+          "Arguments": []
+        },
+        "body": {
+          "Body": [
             {
-              "Constant": {
-                "value": "1"
+              "Declaration": {
+                "var_name": "a",
+                "value": {
+                  "FunctionCall": {
+                    "name": "add",
+                    "args": {
+                      "CallArguments": [
+                        {
+                          "Constant": {
+                            "value": "1"
+                          }
+                        },
+                        {
+                          "Constant": {
+                            "value": "2"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
               }
             },
             {
-              "Constant": {
-                "value": "2"
+              "Return": {
+                "value": {
+                  "Variable": {
+                    "name": "a"
+                  }
+                }
               }
             }
           ]

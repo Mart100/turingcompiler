@@ -140,8 +140,11 @@ where
             }
             "while" => {
                 iter.next(); // consumes "while"
+                println!("parse_statement: {:?}", iter.peek());
                 let condition = parse_expression(iter); // parse the condition
+                println!("condition: {:?}", condition);
                 let body = parse_body(iter); // parse the body
+                println!("body: {:?}", body);
                 AstNode::While {
                     condition: Box::new(condition),
                     body: Box::new(body),
@@ -278,6 +281,16 @@ where
                     right: Box::new(right),
                 }
             }
+            "(" => {
+                if let AstNode::Variable { name } = node {
+                    iter.next(); // consume "("
+                    let args = parse_call_arguments(iter);
+                    node = AstNode::FunctionCall {
+                        name: name,
+                        args: Box::new(args),
+                    };
+                }
+            }
             _ => break,
         }
     }
@@ -315,6 +328,11 @@ where
 {
     if let Some(token) = iter.next() {
         match token.value.as_str() {
+            "(" => {
+                let node = parse_expression(iter);
+                assert_eq!(iter.next().unwrap().value, ")");
+                node
+            }
             num if num.parse::<u8>().is_ok() => AstNode::Constant {
                 value: num.to_string(),
             },

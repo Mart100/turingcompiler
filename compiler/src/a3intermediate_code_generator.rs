@@ -39,6 +39,13 @@ pub enum TACInstruction {
     Return {
         value: String,
     },
+    FunctionCall {
+        name: String,
+        args: Vec<String>,
+    },
+    Function {
+        name: String,
+    },
 }
 
 impl TACInstruction {
@@ -50,25 +57,31 @@ impl TACInstruction {
                 operator,
                 right,
             } => {
-                format!("{} = {} {} {}", result, left, operator, right)
+                format!("{result} = {left} {operator} {right}")
             }
             TACInstruction::Assignment { var_name, value } => {
-                format!("{} = {}", var_name, value)
+                format!("{var_name} = {value}")
             }
             TACInstruction::Label { label } => {
-                format!("{}:", label)
+                format!("{label}:")
             }
             TACInstruction::Goto { label } => {
-                format!("goto {}", label)
+                format!("goto {label}")
             }
             TACInstruction::IfGoto { condition, label } => {
-                format!("if {} goto {}", condition, label)
+                format!("if {condition} goto {label}")
             }
             TACInstruction::IfNotGoto { condition, label } => {
-                format!("if !{} goto {}", condition, label)
+                format!("if !{condition} goto {label}")
             }
             TACInstruction::Return { value } => {
-                format!("return {}", value)
+                format!("return {value}")
+            }
+            TACInstruction::Function { name } => {
+                format!("{name}:")
+            }
+            TACInstruction::FunctionCall { name, args } => {
+                format!("call {name}")
             }
         }
     }
@@ -177,6 +190,32 @@ fn generate_tac(
 
             return "".to_string();
         }
+        AstNode::FunctionCall { name, args } => {
+            let mut arg_tac = Vec::new();
+            let node = &**args;
+
+            if let AstNode::CallArguments(arg_nodes) = node {
+                for arg in arg_nodes {
+                    arg_tac.push(generate_tac(arg, instructions, temp_counter));
+                }
+            } else {
+                panic!("Expected AstNode::Arguments");
+            }
+
+            for (i, arg) in arg_tac.iter().enumerate() {
+                instructions.push(TACInstruction::Assignment {
+                    var_name: format!("arg{}", i),
+                    value: arg.clone(),
+                });
+            }
+
+            instructions.push(TACInstruction::FunctionCall {
+                args: arg_tac,
+                name: name.clone(),
+            });
+
+            return "ret".to_string();
+        }
         AstNode::Function { name, args, body } => {
             let mut arg_tac = Vec::new();
             let node = &**args;
@@ -189,9 +228,7 @@ fn generate_tac(
                 panic!("Expected AstNode::Arguments");
             }
 
-            instructions.push(TACInstruction::Label {
-                label: name.clone(),
-            });
+            instructions.push(TACInstruction::Function { name: name.clone() });
 
             for (i, arg) in arg_tac.iter().enumerate() {
                 instructions.push(TACInstruction::Assignment {
