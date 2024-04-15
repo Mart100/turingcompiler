@@ -1,7 +1,9 @@
-fn add(b, c) {
-    return b + c;
+let a = (22 - 8) * 4 + 5;
+let b = a == 61;
+let c = 0;
+if b {
+    c = 12;
+} else {
+    c = 0;
 };
-fn main() {
-    let a = add(1,2);
-    return a;
-};
+return c;

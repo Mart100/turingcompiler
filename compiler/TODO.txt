@@ -9,3 +9,9 @@ Because the first variables takes the least amount of time to access.
 
 - BENCHMARKS, see how many steps it takes to run snippets
 And try to improve the optimization
+
+- Add ++, --. -=. +=, *=
+
+- Add &&, ||, !, !=
+
+- Show original variable names in debugger

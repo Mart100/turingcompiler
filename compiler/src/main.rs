@@ -60,11 +60,12 @@ fn main() {
 
 fn create_tape(storage_size: i32) -> String {
     let mut tape_storage_vec = Vec::new();
+
     for _ in 0..storage_size {
         let binary = "0 ".repeat(8);
         tape_storage_vec.push(binary.trim().to_string());
     }
-    let tape_storage = tape_storage_vec.join(" 6 ");
+    let tape_storage = format!("6 {} 6", tape_storage_vec.join(" 6 "));
 
     let start_a = symtou8(TapeSymbols::StartA).to_string();
     let end_a = symtou8(TapeSymbols::EndA).to_string();

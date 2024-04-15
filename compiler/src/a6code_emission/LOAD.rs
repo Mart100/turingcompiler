@@ -24,8 +24,8 @@ TO_[A/B/C]_END_R (0,1,StartA) *           R TO_[A/B/C]_END_R"
 
     let mut part2 = "
 # Move to the start of number [A/B/C], and set all values to 7
-SET_TO_7 0 MovH0       L SET_TO_7
-SET_TO_7 1 MovH0       L SET_TO_7"
+SET_TO_7 0 H0       L SET_TO_7
+SET_TO_7 1 H0       L SET_TO_7"
         .to_string();
 
     if working_space == "A" {
@@ -36,15 +36,17 @@ SET_TO_7 1 MovH0       L SET_TO_7"
         part2.push_str("\nSET_TO_7 EndB * L TO_MIDDLE_L\n");
     }
 
-    let part3 = "
+    let part3 = format!(
+        "
 # Find the middle
-TO_MIDDLE_L (1,0,MovH0,StartA,ABsep,EndB) * L TO_MIDDLE_L
-TO_MIDDLE_L Middle Middle              L TO_S1_END"
-        .trim()
-        .to_string()
+TO_MIDDLE_L (1,0,H0,StartA,ABsep,EndB) * L TO_MIDDLE_L
+TO_MIDDLE_L Middle Middle              L TO_{address}_S1"
+    )
+    .trim()
+    .to_string()
         + "\n";
 
-    let part4 = go_to_storage(address, "COPY_VALUE".to_string())
+    let part4 = go_to_storage(address, "COPY_VALUE".to_string(), false)
         .trim()
         .to_string()
         + "\n";
@@ -52,9 +54,9 @@ TO_MIDDLE_L Middle Middle              L TO_S1_END"
     let part5 = "
 # Move Left until start of S[a]
 # Copy the first non-7/8 value
-COPY_VALUE 0 MovH0         R MOVE_ZERO
-COPY_VALUE 1 MovH1         R MOVE_ONE
-COPY_VALUE (MovH0,MovH1) * L COPY_VALUE
+COPY_VALUE 0 H0         R MOVE_ZERO
+COPY_VALUE 1 H1         R MOVE_ONE
+COPY_VALUE (H0,H1) * L COPY_VALUE
 COPY_VALUE StSep *         R RESTORE_VALUE"
         .trim()
         .to_string()
@@ -64,8 +66,8 @@ COPY_VALUE StSep *         R RESTORE_VALUE"
 
     let part7 = "
 # Restore number [A/B/C], translate 7 to 0 and 8 to 1
-RESTORE_VALUE MovH0 0              R RESTORE_VALUE
-RESTORE_VALUE MovH1 1              R RESTORE_VALUE
+RESTORE_VALUE H0 0              R RESTORE_VALUE
+RESTORE_VALUE H1 1              R RESTORE_VALUE
 RESTORE_VALUE StSep *              S TO_START
 # Go back to the start
 TO_START (0,1,StSep) *             R TO_START

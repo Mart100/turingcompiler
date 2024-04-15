@@ -1,9 +1,19 @@
-add:
-t1 = arg0 + arg1
-return t1
-main:
-arg0 = 1
-arg1 = 2
-call add
-a = ret
-return a
+t1 = 22
+t2 = 8
+t3 = t1 - t2
+t4 = 4
+t5 = t3 * t4
+t6 = 5
+a = t5 + t6
+t8 = 61
+b = a == t8
+c = 0
+if b goto L11
+goto L12
+L11:
+c = 12
+goto L13
+L12:
+c = 0
+L13:
+return c

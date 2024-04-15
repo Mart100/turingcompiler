@@ -1,89 +1,110 @@
 {
   "Body": [
     {
-      "Function": {
-        "name": "add",
-        "args": {
-          "Arguments": [
-            {
-              "Variable": {
-                "name": "b"
-              }
-            },
-            {
-              "Variable": {
-                "name": "c"
-              }
-            }
-          ]
-        },
-        "body": {
-          "Body": [
-            {
-              "Return": {
-                "value": {
+      "Declaration": {
+        "var_name": "a",
+        "value": {
+          "BinaryOperation": {
+            "operator": "+",
+            "left": {
+              "BinaryOperation": {
+                "operator": "*",
+                "left": {
                   "BinaryOperation": {
-                    "operator": "+",
+                    "operator": "-",
                     "left": {
-                      "Variable": {
-                        "name": "b"
+                      "Constant": {
+                        "value": "22"
                       }
                     },
                     "right": {
-                      "Variable": {
-                        "name": "c"
+                      "Constant": {
+                        "value": "8"
                       }
                     }
                   }
+                },
+                "right": {
+                  "Constant": {
+                    "value": "4"
+                  }
                 }
               }
+            },
+            "right": {
+              "Constant": {
+                "value": "5"
+              }
             }
-          ]
+          }
         }
       }
     },
     {
-      "Function": {
-        "name": "main",
-        "args": {
-          "Arguments": []
-        },
-        "body": {
-          "Body": [
-            {
-              "Declaration": {
-                "var_name": "a",
-                "value": {
-                  "FunctionCall": {
-                    "name": "add",
-                    "args": {
-                      "CallArguments": [
-                        {
-                          "Constant": {
-                            "value": "1"
-                          }
-                        },
-                        {
-                          "Constant": {
-                            "value": "2"
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
+      "Declaration": {
+        "var_name": "b",
+        "value": {
+          "BinaryOperation": {
+            "operator": "==",
+            "left": {
+              "Variable": {
+                "name": "a"
               }
             },
-            {
-              "Return": {
-                "value": {
-                  "Variable": {
-                    "name": "a"
-                  }
-                }
+            "right": {
+              "Constant": {
+                "value": "61"
               }
             }
-          ]
+          }
+        }
+      }
+    },
+    {
+      "Declaration": {
+        "var_name": "c",
+        "value": {
+          "Constant": {
+            "value": "0"
+          }
+        }
+      }
+    },
+    {
+      "Conditional": {
+        "condition": {
+          "Variable": {
+            "name": "b"
+          }
+        },
+        "then_branch": {
+          "Assignment": {
+            "var_name": "c",
+            "value": {
+              "Constant": {
+                "value": "12"
+              }
+            }
+          }
+        },
+        "else_branch": {
+          "Assignment": {
+            "var_name": "c",
+            "value": {
+              "Constant": {
+                "value": "0"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "Return": {
+        "value": {
+          "Variable": {
+            "name": "c"
+          }
         }
       }
     }

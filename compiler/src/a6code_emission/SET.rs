@@ -1,9 +1,9 @@
 use super::prelude::*;
 
-pub fn set_instruction(instruction_counter: &u32, address: u32, value: [bool; 8]) -> Vec<String> {
-    let part1 = "\nSTART 5 5 L TO_S1_END\n".to_string();
+pub fn set_instructions(instruction_counter: &u32, address: u32, value: [bool; 8]) -> Vec<String> {
+    let part1 = format!("\nSTART 5 5 L TO_{address}_S1\n");
 
-    let part2 = go_to_storage(address, "RESET_S".to_string())
+    let part2 = go_to_storage(address, "RESET_S".to_string(), false)
         .trim()
         .to_string()
         + "\n";

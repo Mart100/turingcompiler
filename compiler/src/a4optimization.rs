@@ -21,26 +21,40 @@ pub fn optimize_tac(mut tac: Vec<TACInstruction>) -> Vec<TACInstruction> {
 
     println!("Variables: {:?}", variables);
 
+    let mut in_function_args = false;
     for instruction in tac {
         match instruction {
             TACInstruction::Assignment {
                 ref var_name,
                 ref value,
             } => {
+                if !var_name.starts_with("arg") {
+                    in_function_args = false;
+                }
                 println!("variables: {:?}", variables);
                 println!("var_name: {}, value: {}", var_name, value);
                 if variables.get(value) == Some(var_name) {
-                    continue;
+                    println!("Remove: {} = {}", var_name, value);
+                    if !var_name.starts_with("arg") || in_function_args || is_temporary(value) {
+                        continue;
+                    }
                 } else if let Some(new_var_name) = variables.get(var_name) {
-                    println!("Replace {} with {}", var_name, new_var_name);
-                    optimized_tac.push(TACInstruction::Assignment {
-                        var_name: new_var_name.clone(),
-                        value: value.clone(),
-                    });
-                } else {
-                    println!("Keep");
-                    optimized_tac.push(instruction.clone());
+                    if is_temporary(var_name) {
+                        println!("Replace {} with {}", var_name, new_var_name);
+                        optimized_tac.push(TACInstruction::Assignment {
+                            var_name: new_var_name.clone(),
+                            value: value.clone(),
+                        });
+                        continue;
+                    }
                 }
+
+                println!("Keep");
+                optimized_tac.push(instruction.clone());
+            }
+            TACInstruction::Function { .. } => {
+                in_function_args = true;
+                optimized_tac.push(instruction);
             }
             TACInstruction::BinaryOperation {
                 result,
@@ -57,8 +71,11 @@ pub fn optimize_tac(mut tac: Vec<TACInstruction>) -> Vec<TACInstruction> {
                     operator,
                     right,
                 });
+
+                in_function_args = false;
             }
             _ => {
+                in_function_args = false;
                 optimized_tac.push(instruction);
             }
         }

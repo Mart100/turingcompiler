@@ -1,13 +1,24 @@
-add:
-arg0 = b
-arg1 = c
-t1 = b + c
-return t1
-main:
-t2 = 1
-t3 = 2
-arg0 = t2
-arg1 = t3
-call add
-a = ret
-return a
+t1 = 22
+t2 = 8
+t3 = t1 - t2
+t4 = 4
+t5 = t3 * t4
+t6 = 5
+t7 = t5 + t6
+a = t7
+t8 = 61
+t9 = a == t8
+b = t9
+t10 = 0
+c = t10
+if b goto L11
+goto L12
+L11:
+t14 = 12
+c = t14
+goto L13
+L12:
+t15 = 0
+c = t15
+L13:
+return c

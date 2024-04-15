@@ -1,6 +1,6 @@
 use super::prelude::*;
 
-pub fn jnz_instruction(instruction_counter: &u32, label: String) -> Vec<String> {
+pub fn jnz_instructions(instruction_counter: &u32, label: String) -> Vec<String> {
     let string = format!(
         "
 # Start of the JUMP if NOT ZERO program

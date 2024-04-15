@@ -6,17 +6,40 @@ use std::collections::HashMap;
 use self::{helpers::helpers::*, variables::Variables};
 use crate::a3intermediate_code_generator::TACInstruction;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AssemblyInstruction {
-    SAVE { destination: String, value: u8 },
-    SET { destination: String, value: u8 },
-    LOAD { destination: String, source: String }, // Storage to working area
-    STORE { destination: String, source: String }, // Working area to storage
-    MOVE { destination: String, source: String }, // Storage to storage
-    JMP { label: String },
-    JNZ { label: String },
-    LABEL { label: String },
-    FN { name: String },
+    SAVE {
+        destination: String,
+        value: u8,
+    },
+    SET {
+        destination: String,
+        value: u8,
+    },
+    LOAD {
+        destination: String,
+        source: String,
+    }, // Storage to working area
+    STORE {
+        destination: String,
+        source: String,
+    }, // Working area to storage
+    MOVE {
+        destination: String,
+        source: String,
+    }, // Storage to storage
+    JMP {
+        label: String,
+    },
+    JNZ {
+        label: String,
+    },
+    LABEL {
+        label: String,
+    },
+    FN {
+        name: String,
+    },
     ADD,
     SUB,
     SUB_SAFE,
@@ -24,31 +47,35 @@ pub enum AssemblyInstruction {
     NOT,
     DIV,
     ISZERO,
-    ENDFN,
+    ENDFN {
+        name: String,
+        address: String,
+        total: u8,
+    },
 }
 
 impl AssemblyInstruction {
     pub fn to_string(&self) -> String {
         match self {
             AssemblyInstruction::SAVE { destination, value } => {
-                format!("SAVE {} {}", destination, value)
+                format!("SAVE {destination} {value}")
             }
             AssemblyInstruction::LOAD {
                 destination,
                 source,
-            } => format!("LOAD {} {}", source, destination),
+            } => format!("LOAD {source} {destination}"),
             AssemblyInstruction::STORE {
                 destination,
                 source,
-            } => format!("STORE {} {}", destination, source),
+            } => format!("STORE {destination} {source}"),
             AssemblyInstruction::SET { destination, value } => {
-                format!("SET {} {}", destination, value)
+                format!("SET {destination} {value}")
             }
             AssemblyInstruction::MOVE {
                 destination,
                 source,
             } => {
-                format!("MOVE {} {}", destination, source)
+                format!("MOVE {source} {destination}")
             }
             AssemblyInstruction::JMP { label } => format!("JMP {}", label),
             AssemblyInstruction::JNZ { label } => format!("JNZ {}", label),
@@ -61,7 +88,11 @@ impl AssemblyInstruction {
             AssemblyInstruction::MUL => "MUL".to_string(),
             AssemblyInstruction::DIV => "DIV".to_string(),
             AssemblyInstruction::ISZERO => "ISZERO".to_string(),
-            AssemblyInstruction::ENDFN => "ENDFN".to_string(),
+            AssemblyInstruction::ENDFN {
+                total,
+                name,
+                address,
+            } => format!("ENDFN {total} {name} {address}"),
         }
     }
 }
@@ -70,10 +101,9 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
     let mut variables = Variables::new();
     let mut code = Vec::new();
     let mut functions: HashMap<String, i32> = HashMap::new(); // <function_name, number_of_calls>
+    let mut latest_func: String = "main".to_string();
 
     for instruction in tac {
-        let mut latest_func: Option<String> = None;
-
         match instruction {
             TACInstruction::Assignment { var_name, value } => {
                 println!("var_name: {}, {}", var_name, value);
@@ -87,8 +117,8 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
                     variables.set(var_name.clone());
                     variables.set(value.clone());
                     code.push(AssemblyInstruction::MOVE {
-                        destination: value.clone(),
-                        source: var_name.clone(),
+                        destination: var_name.clone(),
+                        source: value.clone(),
                     });
                 }
             }
@@ -117,18 +147,31 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
             TACInstruction::Label { label } => {
                 code.push(AssemblyInstruction::LABEL { label });
             }
-            TACInstruction::Return { value } => {
-                variables.set(value.clone());
-                code.push(AssemblyInstruction::LOAD {
-                    destination: "A".to_string(),
-                    source: value.clone(),
-                });
-                code.push(AssemblyInstruction::ENDFN);
-            }
             TACInstruction::Function { name } => {
-                latest_func = Some(name.clone());
+                latest_func = name.clone();
                 functions.insert(name.clone(), 0);
                 code.push(AssemblyInstruction::FN { name });
+            }
+            TACInstruction::Return { value } => {
+                let fn_name = latest_func.clone();
+                variables.set(value.clone());
+
+                if fn_name == "main" {
+                    code.push(AssemblyInstruction::LOAD {
+                        destination: "A".to_string(),
+                        source: value.clone(),
+                    });
+                } else {
+                    code.push(AssemblyInstruction::MOVE {
+                        destination: "ret".to_string(),
+                        source: value.clone(),
+                    });
+                    code.push(AssemblyInstruction::ENDFN {
+                        name: fn_name.clone(),
+                        address: format!("F_{fn_name}"),
+                        total: 0,
+                    });
+                }
             }
             TACInstruction::FunctionCall { name, args } => {
                 let entry = functions.entry(name.clone()).or_insert(0);
@@ -287,6 +330,9 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
         variables.add(format!("F_{name}"), frequency as u32);
     }
 
+    // add ret variable, set frequency high so it will be at the start of the storage
+    variables.add("ret".to_string(), 1000);
+
     println!("Functions: {:?}", functions.clone());
     println!("Variables: {:?}", variables);
 
@@ -314,6 +360,20 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
                 if let Some(var) = variables.get(source) {
                     *source = var.get_address();
                 }
+            }
+            _ => {}
+        }
+        match instruction {
+            AssemblyInstruction::ENDFN {
+                name,
+                address,
+                total,
+            } => {
+                if let Some(var) = variables.get(address) {
+                    *address = var.get_address();
+                }
+                let entry = functions.get(&name.clone()).unwrap();
+                *total = *entry as u8;
             }
             _ => {}
         }

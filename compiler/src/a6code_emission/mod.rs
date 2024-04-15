@@ -1,8 +1,9 @@
 mod ADD;
+mod ENDFN;
 mod ISZERO;
 mod JNZ;
 mod LOAD;
-mod MOV;
+mod MOVE;
 mod MUL;
 mod NOT;
 mod SET;
@@ -25,8 +26,9 @@ pub mod prelude {
 use prelude::*;
 
 use self::{
-    JNZ::jnz_instruction, MUL::mul_instructions, NOT::not_instructions, SET::set_instruction,
-    SUB::sub_instructions, SUB_SAFE::sub_safe_instructions,
+    ENDFN::endfn_instructions, JNZ::jnz_instructions, MOVE::move_instruction,
+    MUL::mul_instructions, NOT::not_instructions, SET::set_instructions, SUB::sub_instructions,
+    SUB_SAFE::sub_safe_instructions,
 };
 
 // Transform Assembly Instructions into Turing Machine Tape and Instructions.
@@ -37,13 +39,12 @@ use self::{
 // returns (tape, instructions)
 pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
     let mut instructions = Vec::new();
-    instructions.push("\nSTART 5 5 S 0END".to_string());
 
     let mut instruction_counter = 1 as u32;
 
     let end_to_next_start = |i: u32| format!("\n{}END 5 5 S {}START", i - 1, i);
 
-    for instruction in assembly {
+    for instruction in assembly.clone() {
         let header = get_assembly_instruction_header(&instruction.to_string());
 
         match instruction {
@@ -71,9 +72,21 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
             }
 
             // End of a function
-            AssemblyInstruction::ENDFN => {
+            AssemblyInstruction::ENDFN {
+                address,
+                name,
+                total,
+            } => {
+                let storage_address = address.replace("S", "").parse::<u32>().unwrap();
+
                 instructions.extend(header);
                 instructions.push(end_to_next_start(instruction_counter));
+                instructions.extend(endfn_instructions(
+                    &instruction_counter,
+                    name,
+                    storage_address,
+                    total,
+                ));
                 instruction_counter += 1;
             }
 
@@ -81,7 +94,7 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
             AssemblyInstruction::JNZ { label } => {
                 instructions.extend(header);
                 instructions.push(end_to_next_start(instruction_counter));
-                instructions.extend(jnz_instruction(&instruction_counter, label));
+                instructions.extend(jnz_instructions(&instruction_counter, label));
                 instruction_counter += 1;
             }
 
@@ -99,7 +112,7 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
 
                 instructions.extend(header);
                 instructions.push(end_to_next_start(instruction_counter));
-                instructions.extend(set_instruction(
+                instructions.extend(set_instructions(
                     &instruction_counter,
                     storage_address,
                     bool_array,
@@ -122,6 +135,25 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
                     &instruction_counter,
                     storage_address,
                     working_space,
+                ));
+
+                instruction_counter += 1;
+            }
+
+            // Move value from Storage cell 1 to Storage cell 2
+            AssemblyInstruction::MOVE {
+                source,
+                destination,
+            } => {
+                let source_address = source.replace("S", "").parse::<u32>().unwrap();
+                let destination_address = destination.replace("S", "").parse::<u32>().unwrap();
+
+                instructions.extend(header);
+                instructions.push(end_to_next_start(instruction_counter));
+                instructions.extend(move_instruction(
+                    &instruction_counter,
+                    source_address,
+                    destination_address,
                 ));
 
                 instruction_counter += 1;
@@ -205,6 +237,22 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
 
     instructions.push(format!("{}END 5 5 S END", instruction_counter - 1));
 
+    // If source code includes main function, add a jump to the main function
+    if assembly.iter().any(|i| {
+        i == &AssemblyInstruction::FN {
+            name: "main".to_string(),
+        }
+    }) {
+        instructions.insert(
+            0,
+            "\n#Code includes main function, so jump to main".to_string(),
+        );
+        instructions.insert(1, "START 5 5 S LABEL_main".to_string());
+    } else {
+        instructions.insert(0, "\n#Code does not include main function\n".to_string());
+        instructions.insert(1, "\nSTART 5 5 S 0END".to_string());
+    }
+
     instructions
 }
 
@@ -276,9 +324,9 @@ fn format_instructions(instructions: String, instruction_counter: u32) -> Vec<St
         .replace("Middle", &symtou8(TapeSymbols::Middle).to_string())
         .replace("StSep", &symtou8(TapeSymbols::StorageSeperator).to_string())
         .replace("StMark", &symtou8(TapeSymbols::StorageMarker).to_string())
-        .replace("MovH0", &symtou8(TapeSymbols::HasMovedHelper0).to_string())
-        .replace("MovH1", &symtou8(TapeSymbols::HasMovedHelper1).to_string())
-        .replace("MulH", &symtou8(TapeSymbols::MultiplyHelper).to_string())
+        .replace("H0", &symtou8(TapeSymbols::HasMovedHelper0).to_string())
+        .replace("H1", &symtou8(TapeSymbols::HasMovedHelper1).to_string())
+        .replace("H2", &symtou8(TapeSymbols::MultiplyHelper).to_string())
         .replace(
             " _",
             &format!(" {}", &symtou8(TapeSymbols::Blank).to_string()),

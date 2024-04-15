@@ -35,7 +35,7 @@ return b;
 let a = 255;
 while (a > 0) {
     a = a - 1;
-    let b = 0;
+    let b = 255;
     while (b > 0) {
         b = b - 1;
     };
@@ -45,4 +45,9 @@ while (a > 0) {
 fn add(b, c) {
     return b + c;
 };
-add(1,2);
+fn main() {
+    let a = add(1,8);
+    let d = add(2,3);
+    let e = add(a,d);
+    return e;
+};
