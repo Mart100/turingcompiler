@@ -15,3 +15,5 @@ And try to improve the optimization
 - Add &&, ||, !, !=
 
 - Show original variable names in debugger
+
+- print and input functions.

@@ -1,6 +1,6 @@
 use super::prelude::*;
 
-pub fn sub_safe_instructions(instruction_counter: &u32) -> Vec<String> {
+pub fn subsafe_instructions(instruction_counter: &u32) -> Vec<String> {
     let string = "
 # Start of the subtraction program
 START 5 5 R FIND_B_END

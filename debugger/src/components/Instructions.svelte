@@ -41,9 +41,9 @@
         <thead>
             <tr>
                 <th>Instruction</th>
-                <th>Read</th>
-                <th>Write</th>
-                <th>Action</th>
+                <th>R</th>
+                <th>W</th>
+                <th>A</th>
                 <th>Next State</th>
             </tr>
         </thead>
@@ -76,6 +76,7 @@
         overflow-y: auto;
         overflow-x: hidden;
         margin-left: 4em;
+        max-width: 30%;
 
         .table {
             text-align: left;

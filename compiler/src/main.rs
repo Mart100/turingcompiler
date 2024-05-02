@@ -6,6 +6,7 @@ mod a3intermediate_code_generator;
 mod a4optimization;
 mod a5code_generator;
 mod a6code_emission;
+mod interpreter;
 mod symbols;
 
 use a1lexer::*;
@@ -14,13 +15,17 @@ use a3intermediate_code_generator::*;
 use a4optimization::optimize_tac;
 use a5code_generator::helpers::assemblyvec_to_string;
 use a5code_generator::*;
-use symbols::{symtou8, TapeSymbols};
+use interpreter::run_code;
 
 use crate::a6code_emission::code_emission;
 
 fn main() {
-    let code = fs::read_to_string("input.txt").unwrap();
+    let source_code = fs::read_to_string("input.txt").unwrap();
+    let turing_code = compile_debug(source_code);
+    fs::write("output.txt", &turing_code).unwrap();
+}
 
+fn compile_debug(code: String) -> String {
     let tokens = lexer(code.clone());
     let tokens_string = tokens_to_string(tokens.clone());
     fs::write("compiler_steps/step1_tokens.txt", &tokens_string).unwrap();
@@ -51,31 +56,100 @@ fn main() {
     turing_code.insert(0, "\n# Original program".to_string());
     turing_code.insert(1, ("\n".to_string() + &code).replace("\n", "\n#program "));
 
-    let tape = create_tape(storage_size);
+    let tape = turing_compiler::create_tape(storage_size);
 
     let turing_contents = format!("{}\n{}", tape, turing_code.join("\n"));
     fs::write("compiler_steps/step6_turingcode.txt", &turing_contents).unwrap();
-    fs::write("output.txt", &turing_contents).unwrap();
+    turing_contents
 }
 
-fn create_tape(storage_size: i32) -> String {
-    let mut tape_storage_vec = Vec::new();
-
-    for _ in 0..storage_size {
-        let binary = "0 ".repeat(8);
-        tape_storage_vec.push(binary.trim().to_string());
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn math1() {
+        let code = "
+let a = (4 + 2) * 3 + 6 - 20;
+return a;";
+        let turing_code = turing_compiler::compile(code).turing_program;
+        let result = crate::run_code(turing_code);
+        assert_eq!(result, 4);
     }
-    let tape_storage = format!("6 {} 6", tape_storage_vec.join(" 6 "));
 
-    let start_a = symtou8(TapeSymbols::StartA).to_string();
-    let end_a = symtou8(TapeSymbols::EndA).to_string();
-    let end_b = symtou8(TapeSymbols::EndB).to_string();
-    let end_c = symtou8(TapeSymbols::EndC).to_string();
-    let middle = symtou8(TapeSymbols::Middle).to_string();
+    #[test]
+    fn comparison() {
+        let code = "
+let a = (22 - 8) * 4 + 5;
+let b = a == 61;
+return b;";
+        let turing_code = turing_compiler::compile(code).turing_program;
+        let result = crate::run_code(turing_code);
+        assert_eq!(result, 1);
+    }
 
-    let tape_working_area = format!(
-        "{start_a} 0 0 0 0 0 0 0 0 {end_a} 0 0 0 0 0 0 0 0 {end_b} 0 0 0 0 0 0 0 0 {end_c}"
-    );
+    #[test]
+    fn ifelse() {
+        let code = "
+let a = (22 - 8) * 4 + 5;
+let b = a == 61;
+let c = 0;
+if b {
+    c = 12;
+} else {
+    c = 2;
+};
+return c;";
+        let turing_code = turing_compiler::compile(code).turing_program;
+        let result = crate::run_code(turing_code);
+        assert_eq!(result, 12);
+    }
 
-    format!("{tape_storage} !{middle} {tape_working_area}")
+    #[test]
+    fn whileloop() {
+        let code = "
+let a = 4;
+let b = 2;
+while (a > 0) {
+    a = a - 1;
+    b = b * 2;
+};
+return b;";
+        let turing_code = turing_compiler::compile(code).turing_program;
+        let result = crate::run_code(turing_code);
+        assert_eq!(result, 32);
+    }
+
+    #[test]
+    fn functions() {
+        let code = "
+fn add(b, c) {
+    return b + c;
+};
+fn main() {
+    let a = add(1,8);
+    let d = add(2,3);
+    let e = add(a,d);
+    return e;
+};";
+        let turing_code = turing_compiler::compile(code).turing_program;
+        let result = crate::run_code(turing_code);
+        assert_eq!(result, 14);
+    }
+
+    fn fibonacci() {
+        let code = "
+fn fibonacci(n) {
+    if n == 0 {
+        return 0;
+    };
+    if n == 1 {
+        return 1;
+    };
+    return fibonacci(n - 1) + fibonacci(n - 2);
+};
+let a = fibonacci(10);
+return a;";
+        let turing_code = turing_compiler::compile(code).turing_program;
+        let result = crate::run_code(turing_code);
+        assert_eq!(result, 55);
+    }
 }

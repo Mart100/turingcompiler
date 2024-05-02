@@ -1,9 +1,9 @@
-let a = (22 - 8) * 4 + 5;
+let a = (22 - 8) * 4 + 6;
 let b = a == 61;
 let c = 0;
 if b {
     c = 12;
 } else {
-    c = 0;
+    c = 2;
 };
 return c;

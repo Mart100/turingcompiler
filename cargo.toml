@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "compiler",
+    "webcompiler",
+]
+resolver = "2"

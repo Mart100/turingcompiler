@@ -52,7 +52,7 @@ pub fn lexer(mut code: String) -> Vec<Token> {
                         type_: TokenType::Keyword,
                         value: word.to_string(),
                     },
-                    "=" | "+" | "*" => Token {
+                    "=" | "-" | "+" | "*" => Token {
                         type_: TokenType::Operator,
                         value: word.to_string(),
                     },

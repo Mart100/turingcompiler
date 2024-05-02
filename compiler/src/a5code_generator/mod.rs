@@ -8,10 +8,6 @@ use crate::a3intermediate_code_generator::TACInstruction;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AssemblyInstruction {
-    SAVE {
-        destination: String,
-        value: u8,
-    },
     SET {
         destination: String,
         value: u8,
@@ -42,10 +38,9 @@ pub enum AssemblyInstruction {
     },
     ADD,
     SUB,
-    SUB_SAFE,
+    SUBSAFE,
     MUL,
     NOT,
-    DIV,
     ISZERO,
     ENDFN {
         name: String,
@@ -57,9 +52,6 @@ pub enum AssemblyInstruction {
 impl AssemblyInstruction {
     pub fn to_string(&self) -> String {
         match self {
-            AssemblyInstruction::SAVE { destination, value } => {
-                format!("SAVE {destination} {value}")
-            }
             AssemblyInstruction::LOAD {
                 destination,
                 source,
@@ -83,10 +75,9 @@ impl AssemblyInstruction {
             AssemblyInstruction::FN { name } => format!("{}:", name),
             AssemblyInstruction::ADD => "ADD".to_string(),
             AssemblyInstruction::SUB => "SUB".to_string(),
-            AssemblyInstruction::SUB_SAFE => "SUB_SAFE".to_string(),
+            AssemblyInstruction::SUBSAFE => "SUB_SAFE".to_string(),
             AssemblyInstruction::NOT => "NOT".to_string(),
             AssemblyInstruction::MUL => "MUL".to_string(),
-            AssemblyInstruction::DIV => "DIV".to_string(),
             AssemblyInstruction::ISZERO => "ISZERO".to_string(),
             AssemblyInstruction::ENDFN {
                 total,
@@ -173,7 +164,7 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
                     });
                 }
             }
-            TACInstruction::FunctionCall { name, args } => {
+            TACInstruction::FunctionCall { name, args: _ } => {
                 let entry = functions.entry(name.clone()).or_insert(0);
 
                 code.push(AssemblyInstruction::SET {
@@ -271,7 +262,7 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
                             source: right.clone(),
                         });
 
-                        code.push(AssemblyInstruction::SUB_SAFE);
+                        code.push(AssemblyInstruction::SUBSAFE);
                         code.push(AssemblyInstruction::ISZERO);
                         code.push(AssemblyInstruction::NOT);
 
@@ -291,7 +282,7 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
                             source: left.clone(),
                         });
 
-                        code.push(AssemblyInstruction::SUB_SAFE);
+                        code.push(AssemblyInstruction::SUBSAFE);
                         code.push(AssemblyInstruction::ISZERO);
                         code.push(AssemblyInstruction::NOT);
 
@@ -344,7 +335,6 @@ pub fn code_generator(tac: Vec<TACInstruction>) -> (Vec<AssemblyInstruction>, i3
             AssemblyInstruction::LOAD { destination, .. }
             | AssemblyInstruction::STORE { destination, .. }
             | AssemblyInstruction::SET { destination, .. }
-            | AssemblyInstruction::SAVE { destination, .. }
             | AssemblyInstruction::MOVE { destination, .. } => {
                 if let Some(var) = variables.get(destination) {
                     *destination = var.get_address();

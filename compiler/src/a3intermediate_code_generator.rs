@@ -1,14 +1,4 @@
-use std::collections::HashMap;
-
 use crate::a2parser::AstNode;
-
-// #[derive(Debug, Clone)]
-// pub struct TACInstruction {
-//     pub result: String,
-//     pub left: String,
-//     pub operator: Option<String>,
-//     pub right: Option<String>,
-// }
 
 #[derive(Debug, Clone)]
 pub enum TACInstruction {
@@ -81,7 +71,7 @@ impl TACInstruction {
                 format!("{name}:")
             }
             TACInstruction::FunctionCall { name, args } => {
-                format!("call {name}")
+                format!("call {name} {}", args.join(", "))
             }
         }
     }
@@ -267,20 +257,26 @@ fn generate_tac(
                 label: true_label.clone(),
             });
             generate_tac(&*then_branch, instructions, temp_counter);
-            instructions.push(TACInstruction::Goto {
-                label: end_label.clone(),
-            });
 
-            instructions.push(TACInstruction::Label {
-                label: false_label.clone(),
-            });
             if let Some(else_branch) = &else_branch {
-                generate_tac(&*else_branch, instructions, temp_counter);
-            }
+                instructions.push(TACInstruction::Goto {
+                    label: end_label.clone(),
+                });
 
-            instructions.push(TACInstruction::Label {
-                label: end_label.clone(),
-            });
+                instructions.push(TACInstruction::Label {
+                    label: false_label.clone(),
+                });
+
+                generate_tac(&*else_branch, instructions, temp_counter);
+
+                instructions.push(TACInstruction::Label {
+                    label: end_label.clone(),
+                });
+            } else {
+                instructions.push(TACInstruction::Label {
+                    label: false_label.clone(),
+                });
+            }
 
             return "".to_string();
         }

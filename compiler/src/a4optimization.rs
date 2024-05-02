@@ -3,19 +3,16 @@ use std::collections::HashMap;
 use crate::TACInstruction;
 
 // Optimize the TAC instructions
-pub fn optimize_tac(mut tac: Vec<TACInstruction>) -> Vec<TACInstruction> {
+pub fn optimize_tac(tac: Vec<TACInstruction>) -> Vec<TACInstruction> {
     let mut optimized_tac = Vec::<TACInstruction>::new();
 
     let mut variables = HashMap::<String, String>::new();
 
     for instruction in &tac {
-        match instruction {
-            TACInstruction::Assignment { var_name, value } => {
-                if !is_temporary(&var_name) && value.parse::<u8>().is_err() && value != "ret" {
-                    variables.insert(value.clone(), var_name.clone());
-                }
+        if let TACInstruction::Assignment { var_name, value } = instruction {
+            if !is_temporary(var_name) && value.parse::<u8>().is_err() && value != "ret" {
+                variables.insert(value.to_string(), var_name.to_string());
             }
-            _ => {}
         }
     }
 
@@ -129,14 +126,13 @@ fn reset_vars(tac: &mut Vec<TACInstruction>) {
             TACInstruction::BinaryOperation {
                 result,
                 left,
-                operator,
+                operator: _,
                 right,
             } => {
                 update_temp_var(&mut temp_var_map, &mut var_counter, result);
                 update_temp_var(&mut temp_var_map, &mut var_counter, left);
                 update_temp_var(&mut temp_var_map, &mut var_counter, right);
             }
-            _ => {}
         }
     }
 }

@@ -1,8 +1,17 @@
 [package]
-name = "compiler"
+name = "turing_compiler"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "turing_compiler"
+path = "src/lib.rs"
+
+[[bin]]
+name = "turing_compiler"
+path = "src/main.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+anyhow = "1.0"

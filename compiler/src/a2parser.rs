@@ -1,4 +1,3 @@
-use core::fmt;
 use std::iter::Peekable;
 
 use serde::Serialize;

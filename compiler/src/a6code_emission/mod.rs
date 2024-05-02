@@ -1,23 +1,23 @@
-mod ADD;
-mod ENDFN;
-mod ISZERO;
-mod JNZ;
-mod LOAD;
-mod MOVE;
-mod MUL;
-mod NOT;
-mod SET;
-mod STORE;
-mod SUB;
-mod SUB_SAFE;
+mod add;
+mod endfn;
 mod helpers;
+mod iszero;
+mod jnz;
+mod load;
+mod r#move;
+mod mul;
+mod not;
+mod set;
+mod store;
+mod sub;
+mod subsafe;
 
 pub mod prelude {
+    pub use super::add::add_instructions;
     pub use super::helpers::*;
-    pub use super::ADD::add_instructions;
-    pub use super::ISZERO::iszero_instruction;
-    pub use super::LOAD::load_instructions;
-    pub use super::STORE::store_instructions;
+    pub use super::iszero::iszero_instruction;
+    pub use super::load::load_instructions;
+    pub use super::store::store_instructions;
     pub use super::*;
     pub use crate::a5code_generator::AssemblyInstruction;
     pub use crate::symbols::{symtou8, TapeSymbols};
@@ -26,9 +26,9 @@ pub mod prelude {
 use prelude::*;
 
 use self::{
-    ENDFN::endfn_instructions, JNZ::jnz_instructions, MOVE::move_instruction,
-    MUL::mul_instructions, NOT::not_instructions, SET::set_instructions, SUB::sub_instructions,
-    SUB_SAFE::sub_safe_instructions,
+    endfn::endfn_instructions, jnz::jnz_instructions, mul::mul_instructions, not::not_instructions,
+    r#move::move_instruction, set::set_instructions, sub::sub_instructions,
+    subsafe::subsafe_instructions,
 };
 
 // Transform Assembly Instructions into Turing Machine Tape and Instructions.
@@ -178,10 +178,10 @@ pub fn code_emission(assembly: Vec<AssemblyInstruction>) -> Vec<String> {
             }
 
             // Subtract the value in B from the value in A, if the result is negative, put 0 in A
-            AssemblyInstruction::SUB_SAFE => {
+            AssemblyInstruction::SUBSAFE => {
                 instructions.extend(header);
                 instructions.push(end_to_next_start(instruction_counter));
-                instructions.extend(sub_safe_instructions(&instruction_counter));
+                instructions.extend(subsafe_instructions(&instruction_counter));
 
                 instruction_counter += 1;
             }

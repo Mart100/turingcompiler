@@ -3,7 +3,7 @@ use super::prelude::*;
 pub fn store_instructions(
     instruction_counter: &u32,
     address: u32,
-    working_space: String,
+    _working_space: String,
 ) -> Vec<String> {
     let part1 = format!("\nSTART 5 5 L TO_{address}_S1\n");
 
@@ -29,7 +29,7 @@ A_END ABsep *                               L COPY_VALUE
 # Copy the first non-H0/MovH8 value
 COPY_VALUE 0 H0                             L MOVE_ZERO
 COPY_VALUE 1 H1                             L MOVE_ONE
-COPY_VALUE (EndA,H0,H1) *                   L COPY_VALUE
+COPY_VALUE (ABsep,H0,H1) *                   L COPY_VALUE
 COPY_VALUE StartA *                         R RESTORE_VALUE"
         .to_string()
         + "\n";

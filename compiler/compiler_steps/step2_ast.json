@@ -33,7 +33,7 @@
             },
             "right": {
               "Constant": {
-                "value": "5"
+                "value": "6"
               }
             }
           }
@@ -92,7 +92,7 @@
             "var_name": "c",
             "value": {
               "Constant": {
-                "value": "0"
+                "value": "2"
               }
             }
           }

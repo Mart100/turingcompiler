@@ -2,19 +2,18 @@
 # Math operations + Comparison
 let a = (22 - 8) * 4 + 5;
 let b = a == 61;
-
-# Math operation
-(15 - 2) * 4 + 2
+return b;
 
 # If statement
-let a = (22 - 8) * 4 + 5;
+let a = (22 - 8) * 4 + 6;
 let b = a == 61;
 let c = 0;
 if b {
     c = 12;
 } else {
-    c = 0;
+    c = 2;
 };
+return c;
 
 # GT and LT
 let a = 2 > 4;
@@ -50,4 +49,24 @@ fn main() {
     let d = add(2,3);
     let e = add(a,d);
     return e;
+};
+
+# Fibonacci 
+fn fibonacci(n) {
+    if n == 0 {
+        return 0;
+    };
+    if n == 1 {
+        return 1;
+    };
+    let prev = n - 1;
+    let prev2 = n - 2;
+    let fib1 = fibonacci(prev);
+    let fib2 = fibonacci(prev2);
+    let b = fib1 + fib2;
+    return b;
+};
+fn main() {
+    let a = fibonacci(2);
+    return a;
 };
