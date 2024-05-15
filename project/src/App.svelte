@@ -1,15 +1,7 @@
 <script lang="ts">
-  import Assembly from "./components/Assembly.svelte";
   import Compiler from "./components/Compiler.svelte";
-  import Controls from "./components/Controls.svelte";
-  import Counter from "./components/Controls.svelte";
   import Debugger from "./components/Debugger.svelte";
-  import Error from "./components/Error.svelte";
-  import Instructions from "./components/Instructions.svelte";
-  import Program from "./components/Program.svelte";
-  import Statistics from "./components/Statistics.svelte";
-  import Tape from "./components/Tape.svelte";
-  import { interpreter, TuringMachine } from "./utils/Interpreter";
+  import { interpreter } from "./utils/Interpreter";
 
   function handleDragOver(event: DragEvent) {
     event.preventDefault();

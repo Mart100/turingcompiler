@@ -117,7 +117,6 @@
       top: 0;
       left: 0;
       width: 20px;
-      height: 100%;
       color: rgb(165, 165, 165);
       text-align: right;
       padding-right: 5px;
