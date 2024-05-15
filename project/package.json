@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "wasm": "wasm-pack build ../webcompiler --target web --out-dir ../project/webcompiler/pkg",
-    "build": "bun run wasm && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
