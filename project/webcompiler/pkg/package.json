@@ -1,0 +1,14 @@
+{
+  "name": "webcompiler",
+  "version": "0.1.0",
+  "files": [
+    "webcompiler_bg.wasm",
+    "webcompiler.js",
+    "webcompiler.d.ts"
+  ],
+  "module": "webcompiler.js",
+  "types": "webcompiler.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
