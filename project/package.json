@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "wasm": "wasm-pack build ../webcompiler --target web",
+    "wasm": "wasm-pack build ../webcompiler --target web --out-dir ../project/webcompiler/pkg",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"

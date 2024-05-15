@@ -4,6 +4,6 @@ import wasmPack from "vite-plugin-wasm-pack";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [wasmPack(["../webcompiler"]), svelte()],
+  plugins: [wasmPack(["./webcompiler"]), svelte()],
   base: "./",
 });
